@@ -346,7 +346,7 @@ export default function Workouts({ onPremiumAction, isPremium }: WorkoutsProps) 
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: 'spring', bounce: 0.3 }}
-              className="bg-white rounded-[3rem] p-8 md:p-12 max-w-3xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-[3rem] p-8 md:p-12 max-w-3xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar"
               onClick={(e) => e.stopPropagation()}
             >
               <motion.button

@@ -78,7 +78,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background ">
       {/* Hamburger Button - Mobile Only */}
       <motion.button
         whileTap={{ scale: 0.95 }}
@@ -127,7 +127,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                 د.س
               </div>
               <div>
-                <h3 className="font-bold">د. سارة أحمد</h3>
+                <h3 className="font-bold">د. الاء سعد</h3>
                 <p className="text-sm text-muted-foreground">أخصائية تغذية</p>
               </div>
             </div>
@@ -178,7 +178,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
           </div>
         </aside>
 
-        <main className="flex-1 p-4 md:p-8 pt-20 lg:pt-8">
+        <main className="flex-1 p-4 md:p-8 pt-20 lg:pt-8 ">
           {activeSection === 'overview' && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -316,7 +316,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                       </motion.button>
                     </div>
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-3 w-full">
                     {recentPatients.slice(0, 5).map((patient, idx) => (
                       <motion.div
                         key={patient.name}
@@ -324,27 +324,27 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.3 + idx * 0.05 }}
                         whileHover={{ scale: 1.02, x: -5 }}
-                        className="flex items-center gap-4 p-4 rounded-2xl hover:bg-secondary cursor-pointer transition-all"
+                        className="flex items-center gap-4 p-4 rounded-2xl hover:bg-secondary cursor-pointer transition-all w-full"
                       >
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold flex-shrink-0">
                           {patient.name.charAt(0)}
                         </div>
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <h4 className="font-bold">{patient.name}</h4>
+                            <h4 className="font-bold truncate">{patient.name}</h4>
                             {patient.status === 'premium' && (
-                              <Crown className="w-4 h-4 text-accent" />
+                              <Crown className="w-4 h-4 text-accent flex-shrink-0" />
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground">{patient.goal}</p>
-                          <div className="mt-2 bg-secondary rounded-full h-1.5 overflow-hidden">
+                          <p className="text-sm text-muted-foreground truncate">{patient.goal}</p>
+                          <div className="mt-2 bg-secondary rounded-full h-1.5 overflow-hidden w-full">
                             <div
                               className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
                               style={{ width: `${patient.progress}%` }}
                             />
                           </div>
                         </div>
-                        <div className="text-left">
+                        <div className="text-left flex-shrink-0">
                           <p className="text-xs text-muted-foreground">{patient.lastVisit}</p>
                         </div>
                       </motion.div>
@@ -383,117 +383,122 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
               </div>
             </motion.div>
           )}
-
           {activeSection === 'patients' && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
-            >
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl md:text-4xl font-bold mb-2">إدارة المرضى</h1>
-                  <p className="text-muted-foreground text-base md:text-lg">جميع المرضى المسجلين</p>
-                </div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setShowAddPatientModal(true)}
-                  className="px-6 py-3 bg-gradient-to-br from-primary to-accent text-white rounded-full font-semibold flex items-center justify-center gap-2 shadow-lg"
-                >
-                  <Plus className="w-5 h-5" />
-                  <span className="hidden sm:inline">إضافة مريض جديد</span>
-                  <span className="sm:hidden">إضافة مريض</span>
-                </motion.button>
-              </div>
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="space-y-6"
+  >
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h1 className="text-2xl md:text-4xl font-bold mb-2">إدارة المرضى</h1>
+        <p className="text-muted-foreground text-base md:text-lg">جميع المرضى المسجلين</p>
+      </div>
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setShowAddPatientModal(true)}
+        className="px-6 py-3 bg-gradient-to-br from-primary to-accent text-white rounded-full font-semibold flex items-center justify-center gap-2 shadow-lg"
+      >
+        <Plus className="w-5 h-5" />
+        <span className="hidden sm:inline">إضافة مريض جديد</span>
+        <span className="sm:hidden">إضافة مريض</span>
+      </motion.button>
+    </div>
 
-              <div className="bg-white rounded-3xl p-6 border border-primary/10 shadow-lg">
-                <div className="relative mb-6">
-                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="ابحث عن مريض..."
-                    className="w-full pr-12 pl-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
+    <div className="bg-white rounded-3xl p-4 md:p-6 border border-primary/10 shadow-lg">
+      <div className="relative mb-4 md:mb-6">
+        <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="ابحث عن مريض..."
+          className="w-full pr-12 pl-6 py-3 md:py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
+        />
+      </div>
+
+      <div className="space-y-2 md:space-y-3">
+        {recentPatients.map((patient, idx) => (
+          <motion.div
+            key={patient.name}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.05 }}
+            whileHover={{ scale: 1.01, x: -5 }}
+            onClick={() => {
+              setSelectedPatient(patient);
+              setShowPatientDetails(true);
+            }}
+            className="flex items-center gap-3 p-4 rounded-2xl hover:bg-secondary cursor-pointer transition-all border border-primary/5"
+          >
+            {/* Avatar */}
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+              {patient.name.charAt(0)}
+            </div>
+
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <h3 className="text-base md:text-lg font-bold truncate">{patient.name}</h3>
+                {patient.status === 'premium' && (
+                  <div className="px-2 py-0.5 bg-gradient-to-br from-primary to-accent text-white rounded-full text-xs font-bold flex items-center gap-1 flex-shrink-0">
+                    <Crown className="w-3 h-3" />
+                    <span className="hidden sm:inline">مميز</span>
+                  </div>
+                )}
+              </div>
+              <p className="text-muted-foreground text-sm truncate mb-2">{patient.goal}</p>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <span>{patient.lastVisit}</span>
+                </div>
+                {/* Progress bar — موبايل فقط */}
+                <div className="flex items-center gap-1.5 flex-1 md:hidden">
+                  <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+                      style={{ width: `${patient.progress}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-primary">{patient.progress}%</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Progress circle — ديسكتوب فقط */}
+            <div className="hidden md:flex flex-col items-center gap-1">
+              <p className="text-xs text-muted-foreground">التقدم</p>
+              <div className="relative w-16 h-16">
+                <svg className="w-full h-full -rotate-90">
+                  <circle cx="32" cy="32" r="27" fill="none" stroke="#E8F5ED" strokeWidth="5" />
+                  <circle
+                    cx="32" cy="32" r="27" fill="none"
+                    stroke={`url(#pg-${idx})`}
+                    strokeWidth="5"
+                    strokeDasharray={`${2 * Math.PI * 27}`}
+                    strokeDashoffset={`${2 * Math.PI * 27 * (1 - patient.progress / 100)}`}
+                    strokeLinecap="round"
                   />
-                </div>
-
-                <div className="space-y-3">
-                  {recentPatients.map((patient, idx) => (
-                    <motion.div
-                      key={patient.name}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.05 }}
-                      whileHover={{ scale: 1.01, x: -5 }}
-                      onClick={() => {
-                        setSelectedPatient(patient);
-                        setShowPatientDetails(true);
-                      }}
-                      className="flex items-center gap-3 md:gap-6 p-4 md:p-6 rounded-2xl hover:bg-secondary cursor-pointer transition-all border border-primary/5"
-                    >
-                      <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-lg md:text-xl flex-shrink-0">
-                        {patient.name.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 md:gap-3 mb-2">
-                          <h3 className="text-base md:text-xl font-bold truncate">{patient.name}</h3>
-                          {patient.status === 'premium' && (
-                            <div className="px-3 py-1 bg-gradient-to-br from-primary to-accent text-white rounded-full text-xs font-bold flex items-center gap-1">
-                              <Crown className="w-3 h-3" />
-                              <span>مميز</span>
-                            </div>
-                          )}
-                        </div>
-                        <p className="text-muted-foreground mb-3">{patient.goal}</p>
-                        <div className="flex items-center gap-4 text-sm">
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <Calendar className="w-4 h-4" />
-                            <span>آخر زيارة: {patient.lastVisit}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm text-muted-foreground mb-2">التقدم</p>
-                        <div className="relative w-20 h-20">
-                          <svg className="w-full h-full -rotate-90">
-                            <circle
-                              cx="40"
-                              cy="40"
-                              r="35"
-                              fill="none"
-                              stroke="#E8F5ED"
-                              strokeWidth="6"
-                            />
-                            <circle
-                              cx="40"
-                              cy="40"
-                              r="35"
-                              fill="none"
-                              stroke={`url(#progress-gradient-${idx})`}
-                              strokeWidth="6"
-                              strokeDasharray={`${2 * Math.PI * 35}`}
-                              strokeDashoffset={`${2 * Math.PI * 35 * (1 - patient.progress / 100)}`}
-                              strokeLinecap="round"
-                            />
-                            <defs>
-                              <linearGradient id={`progress-gradient-${idx}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop key={`stop-1-${idx}`} offset="0%" stopColor="#009E2A" />
-                                <stop key={`stop-2-${idx}`} offset="100%" stopColor="#00C236" />
-                              </linearGradient>
-                            </defs>
-                          </svg>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-lg font-bold">{patient.progress}%</span>
-                          </div>
-                        </div>
-                      </div>
-                      <ChevronRight className="w-6 h-6 text-muted-foreground" />
-                    </motion.div>
-                  ))}
+                  <defs>
+                    <linearGradient id={`pg-${idx}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#009E2A" />
+                      <stop offset="100%" stopColor="#00C236" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-sm font-bold">{patient.progress}%</span>
                 </div>
               </div>
-            </motion.div>
-          )}
+            </div>
+
+            <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  </motion.div>
+)}
 
           {activeSection === 'messages' && (
             <motion.div
@@ -532,7 +537,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                           }`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold ${
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold flex-shrink-0 ${
                               selectedConversation?.name === patient.name
                                 ? 'bg-white/20'
                                 : 'bg-gradient-to-br from-primary to-accent text-white'
@@ -550,7 +555,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                               </p>
                             </div>
                             {idx < 2 && (
-                              <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-white text-xs font-bold">
+                              <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                                 {idx + 1}
                               </div>
                             )}
@@ -566,7 +571,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                     <>
                       <div className="bg-gradient-to-br from-primary to-accent p-6 text-white">
                         <div className="flex items-center gap-4">
-                          <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-xl flex items-center justify-center font-bold text-xl">
+                          <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-xl flex items-center justify-center font-bold text-xl flex-shrink-0">
                             {selectedConversation.name.charAt(0)}
                           </div>
                           <div>
@@ -576,7 +581,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                         </div>
                       </div>
 
-                      <div className="flex-1 p-6 overflow-y-auto space-y-4">
+                      <div className="flex-1 p-6 overflow-y-auto space-y-4 custom-scrollbar">
                         <motion.div
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -623,7 +628,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
-                            className="w-14 h-14 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white shadow-lg"
+                            className="w-14 h-14 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white shadow-lg flex-shrink-0"
                           >
                             <Send className="w-5 h-5" />
                           </motion.button>
@@ -672,7 +677,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                     className="px-6 py-3 bg-white border-2 border-primary text-primary rounded-full font-semibold flex items-center gap-2 shadow-lg"
                   >
                     <Users className="w-5 h-5" />
-                    <span>تعيين خطة لمريض</span>
+                    <span className="hidden md:inline">تعيين خطة لمريض</span>
                   </motion.button>
                 </div>
               </div>
@@ -692,24 +697,24 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: idx * 0.05 }}
                     whileHover={{ y: -5, scale: 1.02 }}
-                    className="bg-white rounded-3xl p-6 border border-primary/10 shadow-lg cursor-pointer"
+                    className="bg-white rounded-3xl p-6 border border-primary/10 shadow-lg cursor-pointer flex flex-col"
                   >
                     <div className="flex items-start justify-between mb-4">
-                      <div className="p-3 bg-gradient-to-br from-primary to-accent rounded-2xl">
+                      <div className="p-3 bg-gradient-to-br from-primary to-accent rounded-2xl flex-shrink-0">
                         <Apple className="w-6 h-6 text-white" />
                       </div>
                       <div className="flex gap-2">
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center"
+                          className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center flex-shrink-0"
                         >
                           <Edit className="w-4 h-4 text-primary" />
                         </motion.button>
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          className="w-8 h-8 bg-red-50 rounded-full flex items-center justify-center"
+                          className="w-8 h-8 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0"
                         >
                           <Trash2 className="w-4 h-4 text-red-500" />
                         </motion.button>
@@ -717,7 +722,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                     </div>
 
                     <h3 className="font-bold text-lg mb-2">{plan.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{plan.type}</p>
+                    <p className="text-sm text-muted-foreground mb-4 flex-1">{plan.type}</p>
 
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
@@ -787,7 +792,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                       className="bg-white rounded-3xl p-6 border border-primary/10 shadow-lg"
                     >
                       <div className="flex items-start justify-between mb-4">
-                        <div className={`p-3 bg-gradient-to-br ${stat.color} rounded-2xl`}>
+                        <div className={`p-3 bg-gradient-to-br ${stat.color} rounded-2xl flex-shrink-0`}>
                           <Icon className="w-6 h-6 text-white" />
                         </div>
                         <div className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">
@@ -878,23 +883,23 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                         transition={{ delay: idx * 0.05 }}
                         className="flex items-center gap-4 p-4 rounded-2xl hover:bg-secondary transition-all"
                       >
-                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent text-white font-bold">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent text-white font-bold flex-shrink-0">
                           {idx + 1}
                         </div>
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold">
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold flex-shrink-0">
                           {patient.name.charAt(0)}
                         </div>
-                        <div className="flex-1">
-                          <h4 className="font-bold">{patient.name}</h4>
-                          <p className="text-sm text-muted-foreground">{patient.goal}</p>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold truncate">{patient.name}</h4>
+                          <p className="text-sm text-muted-foreground truncate">{patient.goal}</p>
                         </div>
-                        <div className="text-center">
+                        <div className="text-center flex-shrink-0">
                           <div className="text-2xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">
                             {patient.progress}%
                           </div>
                           <p className="text-xs text-muted-foreground">التقدم</p>
                         </div>
-                        <Award className="w-6 h-6 text-accent" />
+                        <Award className="w-6 h-6 text-accent flex-shrink-0 hidden md:block" />
                       </motion.div>
                     ))}
                 </div>
@@ -903,7 +908,6 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
           )}
         </main>
       </div>
-
       <AnimatePresence>
         {showAddPatientModal && (
           <motion.div
@@ -918,7 +922,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: 'spring', bounce: 0.3 }}
-              className="bg-white rounded-[3rem] p-8 md:p-12 max-w-2xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-[3rem] p-8 md:p-12 max-w-2xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar"
               onClick={(e) => e.stopPropagation()}
             >
               <motion.button
@@ -1076,7 +1080,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: 'spring', bounce: 0.3 }}
-              className="bg-white rounded-[3rem] p-8 md:p-12 max-w-4xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-[3rem] p-8 md:p-12 max-w-4xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar"
               onClick={(e) => e.stopPropagation()}
             >
               <motion.button
@@ -1090,20 +1094,20 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
 
               <div className="mb-8">
                 <div className="flex items-center gap-6 mb-6">
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-4xl">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-4xl flex-shrink-0">
                     {selectedPatient.name.charAt(0)}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <h2 className="text-3xl font-bold">{selectedPatient.name}</h2>
+                      <h2 className="text-3xl font-bold truncate">{selectedPatient.name}</h2>
                       {selectedPatient.status === 'premium' && (
-                        <div className="px-4 py-1 bg-gradient-to-br from-primary to-accent text-white rounded-full text-sm font-bold flex items-center gap-2">
+                        <div className="px-4 py-1 bg-gradient-to-br from-primary to-accent text-white rounded-full text-sm font-bold flex items-center gap-2 flex-shrink-0">
                           <Crown className="w-4 h-4" />
                           <span>مميز</span>
                         </div>
                       )}
                     </div>
-                    <p className="text-muted-foreground text-lg">{selectedPatient.goal}</p>
+                    <p className="text-muted-foreground text-lg truncate">{selectedPatient.goal}</p>
                   </div>
                 </div>
 
@@ -1234,7 +1238,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: 'spring', bounce: 0.3 }}
-              className="bg-white rounded-[3rem] p-8 md:p-12 max-w-4xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-[3rem] p-8 md:p-12 max-w-4xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar"
               onClick={(e) => e.stopPropagation()}
             >
               <motion.button
@@ -1349,7 +1353,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                         <textarea
                           placeholder="أدخل مكونات الوجبة..."
                           rows={2}
-                          className="w-full px-4 py-3 bg-white rounded-xl border-none outline-none focus:ring-2 focus:ring-primary resize-none text-sm"
+                          className="w-full px-4 py-3 bg-white rounded-xl border-none outline-none focus:ring-2 focus:ring-primary resize-none text-sm custom-scrollbar"
                         />
                         <div className="mt-2">
                           <input
@@ -1368,7 +1372,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                   <textarea
                     placeholder="أدخل الإرشادات المهمة (كل إرشاد في سطر منفصل)"
                     rows={4}
-                    className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary resize-none"
+                    className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary resize-none custom-scrollbar"
                   />
                 </div>
 
@@ -1410,7 +1414,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               transition={{ type: 'spring', bounce: 0.3 }}
-              className="bg-white rounded-[3rem] p-8 md:p-12 max-w-3xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-[3rem] p-8 md:p-12 max-w-3xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto custom-scrollbar"
               onClick={(e) => e.stopPropagation()}
             >
               <motion.button
@@ -1441,7 +1445,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                       className="w-full pr-12 pl-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary mb-4"
                     />
                   </div>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                  <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                     {recentPatients.map((patient) => (
                       <motion.label
                         key={patient.name}
@@ -1468,7 +1472,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
 
                 <div>
                   <label className="block text-sm font-semibold mb-3">اختر الخطة الغذائية</label>
-                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                  <div className="space-y-2 max-h-60 overflow-y-auto custom-scrollbar">
                     {[
                       { name: 'خطة إنقاص الوزن - أساسية', calories: '1500-1800', type: 'إنقاص وزن' },
                       { name: 'خطة الكيتو المتقدمة', calories: '1600-1900', type: 'إنقاص وزن' },
@@ -1506,7 +1510,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
                   <textarea
                     placeholder="أي ملاحظات خاصة بهذا المريض..."
                     rows={3}
-                    className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary resize-none"
+                    className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary resize-none custom-scrollbar"
                   />
                 </div>
 

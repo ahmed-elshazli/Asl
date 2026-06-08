@@ -105,7 +105,7 @@ export function Landing({ onShowLogin, isAuthenticated, userName }: LandingProps
 
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 text-white">
               رحلتك نحو
-              <span className="block mt-3 bg-gradient-to-r from-white via-accent/90 to-white bg-clip-text text-transparent">
+              <span className="block mt-3 bg-gradient-to-r from-white via-accent/90 to-white bg-clip-text ">
                 حياة صحية أفضل
               </span>
             </h1>
