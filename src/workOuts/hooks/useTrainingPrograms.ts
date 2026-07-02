@@ -92,8 +92,9 @@ export const useCompleteExercise = () => {
       queryClient.invalidateQueries({ queryKey: ['user-training-programs'] });
       toast.success('تم إنهاء التمرين بنجاح! عاش يا بطل 💪');
     },
-    onError: () => {
-      toast.error('حدث خطأ أثناء حفظ التقدم');
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || 'حدث خطأ أثناء حفظ التقدم';
+      toast.error(Array.isArray(msg) ? msg[0] : msg);
     }
   });
 };

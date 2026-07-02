@@ -23,8 +23,14 @@ export interface ReviewStatistics {
 export const reviewsApi = {
   getAll: async (): Promise<Review[]> => {
     const response = await api.get('/reviews');
-    const data = response.data?.data ?? response.data;
-    return Array.isArray(data) ? data : (data?.data ?? []);
+    const raw = response.data;
+    if (Array.isArray(raw)) return raw;
+    if (raw?.data && Array.isArray(raw.data)) return raw.data;
+    if (raw?.data?.data && Array.isArray(raw.data.data)) return raw.data.data;
+    if (raw?.data?.doc && Array.isArray(raw.data.doc)) return raw.data.doc;
+    if (raw?.data?.docs && Array.isArray(raw.data.docs)) return raw.data.docs;
+    if (raw?.data?.reviews && Array.isArray(raw.data.reviews)) return raw.data.reviews;
+    return [];
   },
   togglePublish: async (id: string): Promise<Review> => {
     const response = await api.patch(`/reviews/${id}/toggle-publish`);

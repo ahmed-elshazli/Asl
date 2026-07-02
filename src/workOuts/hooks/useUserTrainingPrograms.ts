@@ -26,6 +26,13 @@ export function useAssignProgram() {
   });
 }
 
+export function useAllUserPrograms() {
+  return useQuery({
+    queryKey: KEYS.all,
+    queryFn: () => userTrainingProgramApi.getAllUserPrograms(),
+  });
+}
+
 export function useUserPrograms(userId: string) {
   return useQuery({
     queryKey: KEYS.byUser(userId),
@@ -52,8 +59,8 @@ export function useUnassignProgram() {
       queryClient.invalidateQueries({ queryKey: KEYS.byProgram(variables.programId) });
     },
     onError: (error: any) => {
-      const msg = error.response?.data?.message || 'فشل في إلغاء البرنامج';
-      alert(Array.isArray(msg) ? msg[0] : msg);
+      // سيتم التعامل مع الخطأ داخل المكون
+      console.error("فشل في إلغاء البرنامج", error);
     },
   });
 }

@@ -102,7 +102,7 @@ export const doctorUsersApi = {
   },
 
   /** PATCH /users/{id} */
-  updateById: async (id: string, payload: UpdateUserPayload): Promise<ApiUser> => {
+  updateById: async (id: string, payload: UpdateUserPayload | FormData): Promise<ApiUser> => {
     const response = await api.patch(`/users/${id}`, payload);
     const raw = response.data?.data ?? response.data;
     return toUser(raw);

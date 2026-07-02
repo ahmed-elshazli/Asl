@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Save, Loader2, CheckCircle2, ArrowRight } from 'lucide-react';
-import { useState } from 'react';
+import { X, Save, Loader2, CheckCircle2, ArrowRight, Camera, User } from 'lucide-react';
+import { useState, useRef } from 'react';
 import { useUpdateUser, useUserById } from '../hooks/useDoctorUsers';
 import type { UpdateUserPayload } from '../api/doctorUsersApi';
 
@@ -35,6 +35,9 @@ export function EditPatientModal({ userId, onClose }: EditPatientModalProps) {
   const { mutate: updateUser, isPending, error } = useUpdateUser();
 
   const [form, setForm] = useState<UpdateUserPayload>({});
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // يملي الـ form بالبيانات الحالية لما تيجي من الـ cache
   const getValue = (key: keyof UpdateUserPayload): string | number => {
@@ -51,19 +54,30 @@ export function EditPatientModal({ userId, onClose }: EditPatientModalProps) {
       }));
     };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
   const handleSubmit = () => {
     if (!user) return;
-    // يدمج التغييرات مع البيانات الأصلية
-    const payload: UpdateUserPayload = {
-      fullName: getValue('fullName') as string,
-      phone:    getValue('phone') as string,
-      gender:   getValue('gender') as string,
-      age:      getValue('age') as number,
-      height:   getValue('height') as number,
-      weight:   getValue('weight') as number,
-      country:  getValue('country') as string,
-    };
-    updateUser({ id: userId, payload }, {
+    const formData = new FormData();
+    formData.append('fullName', String(getValue('fullName')));
+    formData.append('phone', String(getValue('phone')));
+    formData.append('gender', String(getValue('gender')));
+    formData.append('age', String(getValue('age')));
+    formData.append('height', String(getValue('height')));
+    formData.append('weight', String(getValue('weight')));
+    formData.append('country', String(getValue('country')));
+    
+    if (imageFile) {
+      formData.append('images', imageFile);
+    }
+
+    updateUser({ id: userId, payload: formData }, {
       onSuccess: () => {
         setSuccess(true);
         setTimeout(onClose, 1500);
@@ -116,7 +130,29 @@ export function EditPatientModal({ userId, onClose }: EditPatientModalProps) {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-6">
+              {/* صورة المستخدم */}
+              <div className="flex flex-col items-center justify-center">
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="relative w-28 h-28 rounded-full bg-secondary border-2 border-dashed border-primary/30 flex items-center justify-center cursor-pointer overflow-hidden group hover:border-primary transition-colors"
+                >
+                  {previewUrl ? (
+                    <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (user?.images && user.images.length > 0) ? (
+                    <img src={user.images[0]} alt="Current" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-10 h-10 text-muted-foreground group-hover:scale-110 transition-transform" />
+                  )}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Camera className="w-8 h-8 text-white" />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">انقر لتغيير الصورة الشخصية</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
               <Field label="الاسم الكامل">
                 <input className={cls.input} value={getValue('fullName')} onChange={setField('fullName')} />
               </Field>
@@ -145,6 +181,7 @@ export function EditPatientModal({ userId, onClose }: EditPatientModalProps) {
                   <input type="number" min={0} className={cls.input}
                     value={getValue('height')} onChange={setField('height')} />
                 </Field>
+              </div>
               </div>
             </div>
           )}

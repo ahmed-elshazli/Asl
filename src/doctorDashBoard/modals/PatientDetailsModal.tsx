@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'motion/react';
 import {
   X, Mail, Phone, MapPin, Ruler, Weight as WeightIcon,
-  Calendar, Trash2, UserX, UserCheck, Loader2, ShieldAlert, Pencil, Dumbbell, Plus, Activity, TrendingUp, MessageCircle, Apple
+  Calendar, Trash2, UserX, UserCheck, Loader2, ShieldAlert, Dumbbell, Plus, Activity, TrendingUp, MessageCircle, Apple
 } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -17,7 +17,6 @@ interface PatientDetailsModalProps {
   userId: string;
   onClose: () => void;
   onDeleted?: () => void;
-  onEdit?: (userId: string) => void;   // ← يفتح EditPatientModal في الـ parent
   onShowUserPrograms?: (userId: string, userName: string) => void; // لعرض البرامج التدريبية
   onAssignProgram?: (userId: string, userName: string) => void; // لتعيين برنامج تدريبي جديد
   onShowUserPlans?: (userId: string, userName: string) => void; // لعرض الخطط الغذائية
@@ -117,7 +116,6 @@ export function PatientDetailsModal({
   userId,
   onClose,
   onDeleted,
-  onEdit,
   onShowUserPrograms,
   onAssignProgram,
   onShowUserPlans,
@@ -260,17 +258,6 @@ export function PatientDetailsModal({
 
               {/* ─── Action Buttons ─── */}
               <div className="space-y-2 pt-1">
-                {/* تعديل البيانات */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => onEdit?.(userId)}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl font-semibold text-sm bg-gradient-to-br from-primary to-accent text-white shadow-md"
-                >
-                  <Pencil className="w-4 h-4" />
-                  تعديل البيانات
-                </motion.button>
-
                 {/* مراسلة المريض */}
                 <motion.button
                   whileHover={{ scale: 1.02 }}

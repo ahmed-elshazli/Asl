@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { User, Mail, Phone, Calendar, LogOut, Crown, Target, Activity, Loader2 } from 'lucide-react';
-import { useUpdateProfile } from '../users/hooks/useUsers';
+import { useState, useEffect } from 'react';
+import { useUpdateProfile, useMyProfile } from '../users/hooks/useUsers';
 import { useLogout } from '../login/hooks/useLogout';
 import { useAuthStore } from '../store/authStore';
 import { PatientReviewCard } from './components/PatientReviewCard';
@@ -12,9 +13,120 @@ interface ProfileProps {
 }
 
 export default function Profile({ onProtectedAction, isAuthenticated }: ProfileProps) {
-  const profile = useAuthStore((state) => state.user);
+  const authUser = useAuthStore((state) => state.user);
+  const { data: fetchedProfile, isLoading } = useMyProfile();
+  
+  // فك التغليف إذا كان الباك إند يرسل البيانات داخل كائن user إضافي
+  const actualFetched = fetchedProfile?.user?.user || fetchedProfile?.user || fetchedProfile;
+  
+  const profile = actualFetched || authUser;
+  
   const { mutate: logout, isPending: isLogoutLoading } = useLogout();
-  const { isPending: isUpdating } = useUpdateProfile();
+  const { mutate: updateProfile, isPending: isUpdating } = useUpdateProfile();
+  
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
+
+  const [form, setForm] = useState({
+    fullName: profile?.fullName || '',
+    phone: profile?.phone || '',
+    age: profile?.age || '',
+    weight: profile?.weight || '',
+    height: profile?.height || '',
+    gender: profile?.gender || 'male',
+    country: profile?.country || '',
+  });
+
+  useEffect(() => {
+    if (profile) {
+      setForm({
+        fullName: profile.fullName || '',
+        phone: profile.phone || '',
+        age: profile.age || '',
+        weight: profile.weight || '',
+        height: profile.height || '',
+        gender: profile.gender || 'male',
+        country: profile.country || '',
+      });
+    }
+  }, [profile]);
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsCompressing(true);
+      try {
+        // ضغط الصورة باستخدام Canvas
+        const compressedFile = await new Promise<File>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target?.result as string;
+            img.onload = () => {
+              const canvas = document.createElement('canvas');
+              let { width, height } = img;
+              const MAX_SIZE = 800; // أقصى عرض أو طول
+              
+              if (width > height && width > MAX_SIZE) {
+                height *= MAX_SIZE / width;
+                width = MAX_SIZE;
+              } else if (height > MAX_SIZE) {
+                width *= MAX_SIZE / height;
+                height = MAX_SIZE;
+              }
+              
+              canvas.width = width;
+              canvas.height = height;
+              const ctx = canvas.getContext('2d');
+              ctx?.drawImage(img, 0, 0, width, height);
+              
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
+                } else {
+                  resolve(file); // في حالة الفشل، أرسل الأصلية
+                }
+              }, 'image/jpeg', 0.7); // 70% Quality
+            };
+            img.onerror = reject;
+          };
+          reader.onerror = reject;
+        });
+        
+        setImageFile(compressedFile);
+        setPreviewUrl(URL.createObjectURL(compressedFile));
+      } catch (err) {
+        console.error("Image compression failed", err);
+        setImageFile(file);
+        setPreviewUrl(URL.createObjectURL(file));
+      } finally {
+        setIsCompressing(false);
+      }
+    }
+  };
+
+  const handleUpdate = () => {
+    if (imageFile) {
+      const formData = new FormData();
+      Object.entries(form).forEach(([key, val]) => {
+        formData.append(key, String(val));
+      });
+      formData.append('images', imageFile);
+      updateProfile(formData);
+    } else {
+      updateProfile(form);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -83,8 +195,20 @@ export default function Profile({ onProtectedAction, isAuthenticated }: ProfileP
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20" />
 
           <div className="relative flex flex-col md:flex-row items-center gap-8">
-            <div className="w-32 h-32 rounded-full bg-white/20 backdrop-blur-xl flex items-center justify-center text-5xl font-bold border-4 border-white/30">
-              {getInitials(profile?.fullName || '')}
+            <div className="relative group">
+              <div className="w-32 h-32 rounded-full bg-white/20 backdrop-blur-xl flex items-center justify-center text-5xl font-bold border-4 border-white/30 overflow-hidden">
+                {previewUrl ? (
+                  <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                ) : profile?.images?.[0] ? (
+                  <img src={profile.images[0]} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(profile?.fullName || '')
+                )}
+              </div>
+              <label className="absolute inset-0 flex items-center justify-center bg-black/40 text-white opacity-0 group-hover:opacity-100 rounded-full cursor-pointer transition-opacity backdrop-blur-sm">
+                <span className="text-sm font-bold">تغيير الصورة</span>
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+              </label>
             </div>
             <div className="flex-1 text-center md:text-right">
               <div className="flex items-center gap-3 justify-center md:justify-start mb-2">
@@ -142,7 +266,8 @@ export default function Profile({ onProtectedAction, isAuthenticated }: ProfileP
               <label className="text-sm text-muted-foreground mb-2 block">الاسم الكامل</label>
               <input
                 type="text"
-                defaultValue={profile?.fullName || ''}
+                value={form.fullName}
+                onChange={e => setForm({ ...form, fullName: e.target.value })}
                 className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -159,7 +284,8 @@ export default function Profile({ onProtectedAction, isAuthenticated }: ProfileP
               <label className="text-sm text-muted-foreground mb-2 block">رقم الهاتف</label>
               <input
                 type="tel"
-                defaultValue={profile?.phone || ''}
+                value={form.phone}
+                onChange={e => setForm({ ...form, phone: e.target.value })}
                 className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -167,7 +293,8 @@ export default function Profile({ onProtectedAction, isAuthenticated }: ProfileP
               <label className="text-sm text-muted-foreground mb-2 block">العمر</label>
               <input
                 type="number"
-                defaultValue={profile?.age || ''}
+                value={form.age}
+                onChange={e => setForm({ ...form, age: e.target.value })}
                 className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -175,12 +302,13 @@ export default function Profile({ onProtectedAction, isAuthenticated }: ProfileP
 
           <div className="mt-8 flex gap-4">
             <motion.button
+              onClick={handleUpdate}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              disabled={isUpdating}
+              disabled={isUpdating || isCompressing}
               className="flex-1 py-4 bg-gradient-to-br from-primary to-accent text-white rounded-full font-bold shadow-lg disabled:opacity-50"
             >
-              {isUpdating ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+              {isCompressing ? 'جاري ضغط الصورة...' : isUpdating ? 'جاري الحفظ...' : 'حفظ التغييرات'}
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -207,7 +335,8 @@ export default function Profile({ onProtectedAction, isAuthenticated }: ProfileP
               <label className="text-sm text-muted-foreground mb-2 block">الوزن الحالي (كجم)</label>
               <input
                 type="number"
-                defaultValue={profile?.weight || ''}
+                value={form.weight}
+                onChange={e => setForm({ ...form, weight: e.target.value })}
                 className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -215,14 +344,16 @@ export default function Profile({ onProtectedAction, isAuthenticated }: ProfileP
               <label className="text-sm text-muted-foreground mb-2 block">الطول (سم)</label>
               <input
                 type="number"
-                defaultValue={profile?.height || ''}
+                value={form.height}
+                onChange={e => setForm({ ...form, height: e.target.value })}
                 className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
             <div>
               <label className="text-sm text-muted-foreground mb-2 block">النوع</label>
               <select 
-                defaultValue={profile?.gender || 'male'}
+                value={form.gender}
+                onChange={e => setForm({ ...form, gender: e.target.value })}
                 className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="male">ذكر</option>
@@ -233,7 +364,8 @@ export default function Profile({ onProtectedAction, isAuthenticated }: ProfileP
               <label className="text-sm text-muted-foreground mb-2 block">البلد</label>
               <input
                 type="text"
-                defaultValue={profile?.country || ''}
+                value={form.country}
+                onChange={e => setForm({ ...form, country: e.target.value })}
                 className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
               />
             </div>

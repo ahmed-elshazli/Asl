@@ -47,6 +47,18 @@ export const authApi = {
   },
 
   /**
+   * جلب بيانات الملف الشخصي للمستخدم الحالي
+   */
+  getProfile: async (): Promise<any> => {
+    const response = await api.get('/auth/profile');
+    const raw = response.data;
+    console.log("=== RAW PROFILE RESPONSE ===", raw);
+    const userObj = raw?.data?.user || raw?.user;
+    if (userObj) return userObj;
+    return raw?.data || raw;
+  },
+
+  /**
    * دالة تسجيل الخروج
    */
   logout: async (userId: string): Promise<any> => {
@@ -78,11 +90,4 @@ export const authApi = {
     return response.data;
   },
 
-  /**
-   * دالة جلب بيانات الملف الشخصي
-   */
-  getProfile: async (): Promise<any> => {
-    const response = await api.get('/auth/profile');
-    return response.data;
-  },
 };

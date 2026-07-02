@@ -33,6 +33,12 @@ export const userTrainingProgramApi = {
     return response.data?.data ?? response.data;
   },
 
+  /** GET /user-training-program — جلب كل برامج المستخدمين المعينة */
+  getAllUserPrograms: async (): Promise<UserTrainingProgram[]> => {
+    const response = await api.get('/user-training-program');
+    return response.data?.data ?? response.data;
+  },
+
   /** GET /user-training-program/user/{userId} — جلب برامج مريض معين */
   getUserPrograms: async (userId: string): Promise<UserTrainingProgram[]> => {
     const response = await api.get(`/user-training-program/user/${userId}`);

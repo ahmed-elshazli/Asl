@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Dumbbell, Trash2, Loader2, Calendar } from 'lucide-react';
+import { X, Dumbbell, Trash2, Loader2, Calendar, AlertTriangle, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useUserPrograms, useUnassignProgram } from '../../workOuts/hooks/useUserTrainingPrograms';
 import { useTrainingPrograms } from '../../workOuts/hooks/useTrainingPrograms';
@@ -16,6 +16,8 @@ export function UserProgramsModal({ userId, userName, onClose }: UserProgramsMod
   const { data: allProgramsResponse, isLoading: loadingPrograms } = useTrainingPrograms();
   const { mutate: unassignProgram, isPending: isUnassigning } = useUnassignProgram();
   const [deletingProgramId, setDeletingProgramId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   // Debugging
   console.log("UserPrograms API Response:", userPrograms);
@@ -48,10 +50,25 @@ export function UserProgramsModal({ userId, userName, onClose }: UserProgramsMod
   }
   const isLoading = loadingAssignments || loadingPrograms;
 
-  const handleUnassign = (programId: string) => {
-    setDeletingProgramId(programId);
-    unassignProgram({ userId, programId }, {
-      onSettled: () => setDeletingProgramId(null),
+  const handleUnassignClick = (programId: string) => {
+    setConfirmDeleteId(programId);
+  };
+
+  const executeUnassign = () => {
+    if (!confirmDeleteId) return;
+    setDeletingProgramId(confirmDeleteId);
+    setDeleteError(null);
+    unassignProgram({ userId, programId: confirmDeleteId }, {
+      onSuccess: () => {
+        setConfirmDeleteId(null);
+        setDeletingProgramId(null);
+      },
+      onError: (error: any) => {
+        const msg = error.response?.data?.message || 'فشل في إلغاء البرنامج';
+        setDeleteError(Array.isArray(msg) ? msg[0] : msg);
+        setDeletingProgramId(null);
+        setConfirmDeleteId(null);
+      },
     });
   };
 
@@ -155,7 +172,7 @@ export function UserProgramsModal({ userId, userName, onClose }: UserProgramsMod
                           <motion.button
                             whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                             disabled={isUnassigning}
-                            onClick={() => handleUnassign(programId)}
+                            onClick={() => handleUnassignClick(programId)}
                             className="p-3 bg-red-100 text-red-500 rounded-xl hover:bg-red-200 transition-colors disabled:opacity-50"
                             title="حذف هذا السجل"
                           >
@@ -191,7 +208,7 @@ export function UserProgramsModal({ userId, userName, onClose }: UserProgramsMod
                       <motion.button
                         whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
                         disabled={isUnassigning}
-                        onClick={() => handleUnassign(programId)}
+                        onClick={() => handleUnassignClick(programId)}
                         className="p-3 bg-red-100 text-red-500 rounded-xl hover:bg-red-200 transition-colors disabled:opacity-50"
                         title="إلغاء تعيين البرنامج"
                       >
@@ -204,6 +221,54 @@ export function UserProgramsModal({ userId, userName, onClose }: UserProgramsMod
             </div>
           )}
         </div>
+        
+        {/* نافذة التأكيد */}
+        <AnimatePresence>
+          {confirmDeleteId && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm rounded-3xl"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl text-center"
+              >
+                <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">هل أنت متأكد؟</h3>
+                <p className="text-muted-foreground mb-6">هل تريد حقاً إزالة هذا البرنامج من المستخدم؟ لا يمكن التراجع عن هذا الإجراء.</p>
+                <div className="flex items-center gap-3">
+                  <button onClick={() => setConfirmDeleteId(null)} disabled={isUnassigning} className="flex-1 px-4 py-3 bg-secondary text-foreground rounded-xl font-bold hover:bg-secondary/80 transition-colors disabled:opacity-50">
+                    إلغاء
+                  </button>
+                  <button onClick={executeUnassign} disabled={isUnassigning} className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                    {isUnassigning ? <Loader2 className="w-5 h-5 animate-spin" /> : 'نعم، احذف'}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* رسالة الخطأ */}
+        <AnimatePresence>
+          {deleteError && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+              className="absolute bottom-6 left-6 right-6 z-50 bg-red-50 border border-red-200 text-red-700 rounded-2xl p-4 shadow-lg flex items-start gap-4"
+            >
+              <AlertCircle className="w-6 h-6 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-bold text-red-800">حدث خطأ</h4>
+                <p className="text-sm mt-1">{deleteError}</p>
+              </div>
+              <button onClick={() => setDeleteError(null)} className="text-red-400 hover:text-red-700 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </motion.div>
   );

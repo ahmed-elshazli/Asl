@@ -82,7 +82,7 @@ export const useCreateUser = () => {
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: UpdateUserPayload }) =>
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateUserPayload | FormData }) =>
       doctorUsersApi.updateById(id, payload),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: usersKeys.lists() });

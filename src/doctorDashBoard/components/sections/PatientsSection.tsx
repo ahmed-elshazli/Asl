@@ -3,7 +3,7 @@ import {
   Plus, Search, Calendar, ChevronRight, ChevronLeft,
   Loader2, User, Mail, Phone, MapPin, Ruler, Weight,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAllUsers } from '../../hooks/useDoctorUsers';
 import type { ApiUser } from '../../api/doctorUsersApi';
 
@@ -16,16 +16,22 @@ export function PatientsSection({ onShowAddPatient, onSelectPatient }: PatientsS
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const { data: usersResponse, isLoading } = useAllUsers(currentPage, 10);
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  // تأخير إرسال البحث للباك إند (Debounce) وإعادة تعيين الصفحة إلى 1
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const { data: usersResponse, isLoading } = useAllUsers(currentPage, 10, debouncedSearch);
   const allUsers = usersResponse?.data || [];
   const pagination = usersResponse?.pagination;
 
-  const filteredUsers = searchQuery === ''
-    ? allUsers
-    : allUsers.filter((user: ApiUser) =>
-        user.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()),
-      );
+  const filteredUsers = allUsers;
 
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('ar-EG', {
@@ -113,8 +119,12 @@ export function PatientsSection({ onShowAddPatient, onSelectPatient }: PatientsS
                   className="flex items-center gap-3 p-4 rounded-2xl hover:bg-secondary cursor-pointer transition-all border border-primary/5"
                 >
                   {/* Avatar */}
-                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
-                    {getInitial(user.fullName)}
+                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold text-lg flex-shrink-0 overflow-hidden">
+                    {user.images?.[0] ? (
+                      <img src={user.images[0]} alt={user.fullName} className="w-full h-full object-cover" />
+                    ) : (
+                      getInitial(user.fullName)
+                    )}
                   </div>
 
                   {/* Info */}

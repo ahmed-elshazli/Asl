@@ -19,12 +19,31 @@ export default function Workouts() {
   const mappedWorkouts = userProgramsData?.map((up: any) => {
     const prog = up.programId || up.program || up; // handle both programId or program keys
     if (!prog || typeof prog !== 'object') return null;
+
+    let actualProgramId = prog._id || prog.id;
+    if (up.programId && typeof up.programId === 'object') actualProgramId = up.programId._id || up.programId.id;
+    else if (up.program && typeof up.program === 'object') actualProgramId = up.program._id || up.program.id;
     
+    // إذا لم نتمكن من استخراج معرف البرنامج، نستخدم المعرف الأساسي كحل أخير
+    if (!actualProgramId) actualProgramId = up.programId || up.program || up._id || up.id;
+
     let totalCalories = 0;
     let totalDuration = 0;
 
     const mappedExercises = prog.exercises?.map((ex: any) => {
-      const fullExercise = (ex.exerciseId && typeof ex.exerciseId === 'object') ? ex.exerciseId : ex;
+      const fullExercise = (ex.exerciseId && typeof ex.exerciseId === 'object') ? ex.exerciseId : 
+                           (ex.exercise && typeof ex.exercise === 'object') ? ex.exercise : ex;
+                           
+      let extractedId = fullExercise?._id || fullExercise?.id;
+      if (!extractedId) {
+        if (typeof ex === 'string') extractedId = ex;
+        else if (typeof ex.exerciseId === 'string') extractedId = ex.exerciseId;
+        else if (typeof ex.exercise === 'string') extractedId = ex.exercise;
+        else if (ex.exerciseId?._id) extractedId = ex.exerciseId._id;
+        else if (ex.exercise?._id) extractedId = ex.exercise._id;
+        else extractedId = ex._id || ex.id;
+      }
+
       const duration = fullExercise?.duration || 0;
       const cals = fullExercise?.calories || 0;
       
@@ -32,7 +51,7 @@ export default function Workouts() {
       totalCalories += cals;
 
       return {
-        id: fullExercise?._id || ex._id,
+        id: extractedId,
         name: fullExercise?.title || fullExercise?.name || 'تمرين',
         description: fullExercise?.description,
         duration: duration ? `${duration} دقيقة` : '-',
@@ -40,10 +59,11 @@ export default function Workouts() {
         images: fullExercise?.images || [],
         calories: cals
       };
-    }) || [];
+    }).filter((ex: any) => !!ex.id) || [];
 
     return {
-      id: prog._id || up._id,
+      id: actualProgramId, // إرسال معرف البرنامج الأساسي بشكل قاطع
+      assignmentId: up._id || up.id,
       name: prog.title || prog.name || 'برنامج تدريبي',
       category: prog.category || 'عام',
       level: prog.level === 'beginner' ? 'مبتدئ' : prog.level === 'intermediate' ? 'متوسط' : prog.level === 'advanced' ? 'متقدم' : prog.level || 'متوسط',
@@ -85,7 +105,7 @@ export default function Workouts() {
     const currentEx = selectedWorkout.exercises[currentExIdx];
     
     completeExercise(
-      { programId: selectedWorkout.id, exerciseId: currentEx.id },
+      { programId: selectedWorkout.assignmentId, exerciseId: currentEx.id },
       {
         onSuccess: () => {
           if (currentExIdx < selectedWorkout.exercises.length - 1) {

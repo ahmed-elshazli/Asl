@@ -184,7 +184,6 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
             userId={selectedUserId}
             onClose={() => setSelectedUserId(null)}
             onDeleted={() => setSelectedUserId(null)}
-            onEdit={(id) => { setSelectedUserId(null); setEditingUserId(id); }}
             onShowUserPrograms={(id, name) => { setSelectedUserId(null); setViewingUserProgramsId({id, name}); }}
             onShowUserPlans={(id, name) => { setSelectedUserId(null); setViewingUserPlansId({id, name}); }}
             onShowStats={(id, name) => { setSelectedUserId(null); setViewingPatientStatsId({id, name}); }}
