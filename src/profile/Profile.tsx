@@ -1,5 +1,9 @@
 import { motion } from 'motion/react';
-import { User, Mail, Phone, Calendar, LogOut, Crown, Award, Target, Activity } from 'lucide-react';
+import { User, Mail, Phone, Calendar, LogOut, Crown, Target, Activity, Loader2 } from 'lucide-react';
+import { useUpdateProfile } from '../users/hooks/useUsers';
+import { useLogout } from '../login/hooks/useLogout';
+import { useAuthStore } from '../store/authStore';
+import { PatientReviewCard } from './components/PatientReviewCard';
 
 interface ProfileProps {
   onProtectedAction: (action: () => void) => void;
@@ -7,7 +11,11 @@ interface ProfileProps {
   onLogout: () => void;
 }
 
-export default function Profile({ onProtectedAction, isAuthenticated, onLogout }: ProfileProps) {
+export default function Profile({ onProtectedAction, isAuthenticated }: ProfileProps) {
+  const profile = useAuthStore((state) => state.user);
+  const { mutate: logout, isPending: isLogoutLoading } = useLogout();
+  const { isPending: isUpdating } = useUpdateProfile();
+
   if (!isAuthenticated) {
     return (
       <div className="p-6 md:p-8 pb-12">
@@ -38,11 +46,21 @@ export default function Profile({ onProtectedAction, isAuthenticated, onLogout }
     );
   }
 
+  // إنشاء الأحرف الأولى من الاسم
+  const getInitials = (name: string) => {
+    if (!name) return 'م';
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}.${parts[1][0]}`;
+    }
+    return name.substring(0, 2);
+  };
+
   const stats = [
-    { label: 'أيام الالتزام', value: '127', icon: Calendar, color: 'from-primary to-accent' },
-    { label: 'الإنجازات', value: '12', icon: Award, color: 'from-accent to-primary' },
-    { label: 'الوزن المفقود', value: '6.5 كجم', icon: Target, color: 'from-primary to-accent' },
-    { label: 'السعرات اليومية', value: '2,150', icon: Activity, color: 'from-accent to-primary' },
+    { label: 'العمر', value: profile?.age ? `${profile.age} سنة` : '-', icon: Calendar, color: 'from-primary to-accent' },
+    { label: 'الوزن', value: profile?.weight ? `${profile.weight} كجم` : '-', icon: Target, color: 'from-accent to-primary' },
+    { label: 'الطول', value: profile?.height ? `${profile.height} سم` : '-', icon: Activity, color: 'from-primary to-accent' },
+    { label: 'النوع', value: profile?.gender === 'female' ? 'أنثى' : 'ذكر', icon: User, color: 'from-accent to-primary' },
   ];
 
   return (
@@ -65,23 +83,25 @@ export default function Profile({ onProtectedAction, isAuthenticated, onLogout }
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJ3aGl0ZSIgc3Ryb2tlLW9wYWNpdHk9IjAuMSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-20" />
 
           <div className="relative flex flex-col md:flex-row items-center gap-8">
-            <div className="w-32 h-32 rounded-full bg-white/20 backdrop-blur-xl flex items-center justify-center text-6xl font-bold border-4 border-white/30">
-              م.أ
+            <div className="w-32 h-32 rounded-full bg-white/20 backdrop-blur-xl flex items-center justify-center text-5xl font-bold border-4 border-white/30">
+              {getInitials(profile?.fullName || '')}
             </div>
             <div className="flex-1 text-center md:text-right">
               <div className="flex items-center gap-3 justify-center md:justify-start mb-2">
-                <h2 className="text-4xl font-bold">محمد أحمد</h2>
+                <h2 className="text-4xl font-bold">{profile?.fullName || 'مستخدم'}</h2>
                 <Crown className="w-8 h-8" />
               </div>
-              <p className="text-white/80 text-lg mb-4">مشترك مميز منذ يناير 2025</p>
+              <p className="text-white/80 text-lg mb-4">
+                {profile?.country ? `من ${profile.country}` : 'عضو في أصِل'}
+              </p>
               <div className="flex flex-wrap gap-3 justify-center md:justify-start">
                 <div className="px-4 py-2 bg-white/20 backdrop-blur-xl rounded-full flex items-center gap-2">
                   <Mail className="w-4 h-4" />
-                  <span>mohamed@example.com</span>
+                  <span>{profile?.email || '-'}</span>
                 </div>
                 <div className="px-4 py-2 bg-white/20 backdrop-blur-xl rounded-full flex items-center gap-2">
                   <Phone className="w-4 h-4" />
-                  <span>+966 50 123 4567</span>
+                  <span dir="ltr">{profile?.phone || '-'}</span>
                 </div>
               </div>
             </div>
@@ -122,7 +142,7 @@ export default function Profile({ onProtectedAction, isAuthenticated, onLogout }
               <label className="text-sm text-muted-foreground mb-2 block">الاسم الكامل</label>
               <input
                 type="text"
-                defaultValue="محمد أحمد"
+                defaultValue={profile?.fullName || ''}
                 className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -130,23 +150,24 @@ export default function Profile({ onProtectedAction, isAuthenticated, onLogout }
               <label className="text-sm text-muted-foreground mb-2 block">البريد الإلكتروني</label>
               <input
                 type="email"
-                defaultValue="mohamed@example.com"
-                className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
+                defaultValue={profile?.email || ''}
+                readOnly
+                className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary opacity-70 cursor-not-allowed"
               />
             </div>
             <div>
               <label className="text-sm text-muted-foreground mb-2 block">رقم الهاتف</label>
               <input
                 type="tel"
-                defaultValue="+966 50 123 4567"
+                defaultValue={profile?.phone || ''}
                 className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">تاريخ الميلاد</label>
+              <label className="text-sm text-muted-foreground mb-2 block">العمر</label>
               <input
-                type="text"
-                defaultValue="15 مارس 1990"
+                type="number"
+                defaultValue={profile?.age || ''}
                 className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
@@ -156,17 +177,19 @@ export default function Profile({ onProtectedAction, isAuthenticated, onLogout }
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="flex-1 py-4 bg-gradient-to-br from-primary to-accent text-white rounded-full font-bold shadow-lg"
+              disabled={isUpdating}
+              className="flex-1 py-4 bg-gradient-to-br from-primary to-accent text-white rounded-full font-bold shadow-lg disabled:opacity-50"
             >
-              حفظ التغييرات
+              {isUpdating ? 'جاري الحفظ...' : 'حفظ التغييرات'}
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={onLogout}
-              className="px-8 py-4 bg-red-500 text-white rounded-full font-bold shadow-lg flex items-center gap-2"
+              onClick={() => logout()}
+              disabled={isLogoutLoading}
+              className="px-8 py-4 bg-red-500 text-white rounded-full font-bold shadow-lg flex items-center gap-2 disabled:opacity-50"
             >
-              <LogOut className="w-5 h-5" />
+              {isLogoutLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <LogOut className="w-5 h-5" />}
               <span>تسجيل الخروج</span>
             </motion.button>
           </div>
@@ -181,38 +204,49 @@ export default function Profile({ onProtectedAction, isAuthenticated, onLogout }
           <h3 className="text-2xl font-bold mb-6">الأهداف الصحية</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">الوزن الحالي</label>
+              <label className="text-sm text-muted-foreground mb-2 block">الوزن الحالي (كجم)</label>
               <input
-                type="text"
-                defaultValue="78.5 كجم"
+                type="number"
+                defaultValue={profile?.weight || ''}
                 className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">الوزن المستهدف</label>
+              <label className="text-sm text-muted-foreground mb-2 block">الطول (سم)</label>
               <input
-                type="text"
-                defaultValue="75 كجم"
+                type="number"
+                defaultValue={profile?.height || ''}
                 className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">الطول</label>
-              <input
-                type="text"
-                defaultValue="175 سم"
+              <label className="text-sm text-muted-foreground mb-2 block">النوع</label>
+              <select 
+                defaultValue={profile?.gender || 'male'}
                 className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground mb-2 block">مستوى النشاط</label>
-              <select className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary">
-                <option>قليل النشاط</option>
-                <option>نشاط معتدل</option>
-                <option>نشاط عالي</option>
+              >
+                <option value="male">ذكر</option>
+                <option value="female">أنثى</option>
               </select>
             </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-2 block">البلد</label>
+              <input
+                type="text"
+                defaultValue={profile?.country || ''}
+                className="w-full px-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
           </div>
+        </motion.div>
+
+        {/* قسم إضافة التقييم للمريض */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <PatientReviewCard />
         </motion.div>
       </motion.div>
     </div>

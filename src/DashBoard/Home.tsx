@@ -1,6 +1,8 @@
 import { motion } from 'motion/react';
-import { Sparkles, Crown, TrendingUp, Award, Apple, Activity } from 'lucide-react';
-import { AreaChart, Area, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Sparkles, Crown, TrendingUp, Award, Apple, Activity, Loader2 } from 'lucide-react';
+import { AreaChart, Area, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { usePatientDashboard, useWeightHistory } from './hooks/usePatientDashboard';
+import { useMyPlans } from '../dietPlans/hooks/usePlans';
 
 interface HomeProps {
   onProtectedAction: (action: () => void) => void;
@@ -10,21 +12,46 @@ interface HomeProps {
 }
 
 export function Home({  onPremiumAction,  isPremium }: HomeProps) {
-  const caloriesData = [
-    { day: 'السبت', calories: 1850 },
-    { day: 'الأحد', calories: 2100 },
-    { day: 'الاثنين', calories: 1900 },
-    { day: 'الثلاثاء', calories: 2200 },
-    { day: 'الأربعاء', calories: 1950 },
-    { day: 'الخميس', calories: 2050 },
-    { day: 'الجمعة', calories: 2150 },
-  ];
+  const { data: dashboard, isLoading: isLoadingDashboard } = usePatientDashboard('me');
+  const { data: weightHistoryData, isLoading: isLoadingWeight } = useWeightHistory();
+  const { data: userPlans, isLoading: isLoadingPlans } = useMyPlans();
+  const apiPlan = userPlans?.[0];
+  const isLoading = isLoadingDashboard || isLoadingWeight || isLoadingPlans;
 
-  const macrosData = [
+  const overview = dashboard?.overview || {};
+
+  const daysMap: Record<string, string> = {
+    Sat: 'السبت', Sun: 'الأحد', Mon: 'الإثنين',
+    Tue: 'الثلاثاء', Wed: 'الأربعاء', Thu: 'الخميس', Fri: 'الجمعة'
+  };
+
+  // ترتيب الأيام عشان الشارت (إذا كانت راجعة من الباك)
+  const caloriesData = overview.weeklyCaloriesBurned?.length > 0 
+    ? overview.weeklyCaloriesBurned.map((d: any) => ({
+        day: daysMap[d.day] || d.day,
+        calories: d.calories
+      }))
+    : [
+        { day: 'السبت', calories: 0 },
+        { day: 'الأحد', calories: 0 },
+        { day: 'الاثنين', calories: 0 },
+        { day: 'الثلاثاء', calories: 0 },
+        { day: 'الأربعاء', calories: 0 },
+        { day: 'الخميس', calories: 0 },
+        { day: 'الجمعة', calories: 0 },
+      ];
+
+  const macrosData = apiPlan?.macros ? [
+    { name: 'بروتين', value: apiPlan.macros.protein, color: '#009E2A' },
+    { name: 'كربوهيدرات', value: apiPlan.macros.carbs, color: '#00C236' },
+    { name: 'دهون', value: apiPlan.macros.fats, color: '#E8F5ED' },
+  ] : dashboard?.macrosData || [
     { name: 'بروتين', value: 30, color: '#009E2A' },
     { name: 'كربوهيدرات', value: 45, color: '#00C236' },
     { name: 'دهون', value: 25, color: '#E8F5ED' },
   ];
+
+
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -75,7 +102,14 @@ export function Home({  onPremiumAction,  isPremium }: HomeProps) {
         )}
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-20 text-primary">
+          <Loader2 className="w-12 h-12 animate-spin mb-4" />
+          <p className="font-bold text-lg">جاري تحميل الإحصائيات...</p>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div
           variants={itemVariants}
           whileHover={{ y: -5 }}
@@ -87,9 +121,9 @@ export function Home({  onPremiumAction,  isPremium }: HomeProps) {
             </div>
             <TrendingUp className="w-5 h-5 text-primary" />
           </div>
-          <p className="text-muted-foreground mb-1">السعرات اليومية</p>
-          <p className="text-3xl font-bold">2,150</p>
-          <p className="text-sm text-primary mt-1">من 2,300 كالوري</p>
+          <p className="text-muted-foreground mb-1">السعرات المحروقة</p>
+          <p className="text-3xl font-bold">{overview.totalCaloriesBurned || 0}</p>
+          <p className="text-sm text-primary mt-1">إجمالي الحرق</p>
         </motion.div>
 
         <motion.div
@@ -103,9 +137,9 @@ export function Home({  onPremiumAction,  isPremium }: HomeProps) {
             </div>
             <Sparkles className="w-5 h-5 text-primary" />
           </div>
-          <p className="text-muted-foreground mb-1">الوجبات المتبقية</p>
-          <p className="text-3xl font-bold">2</p>
-          <p className="text-sm text-primary mt-1">من 5 وجبات</p>
+          <p className="text-muted-foreground mb-1">البرامج النشطة</p>
+          <p className="text-3xl font-bold">{overview.activePrograms || 0}</p>
+          <p className="text-sm text-primary mt-1">مكتمل: {overview.completedPrograms || 0}</p>
         </motion.div>
 
         <motion.div
@@ -120,8 +154,8 @@ export function Home({  onPremiumAction,  isPremium }: HomeProps) {
             <TrendingUp className="w-5 h-5 text-primary" />
           </div>
           <p className="text-muted-foreground mb-1">الوزن الحالي</p>
-          <p className="text-3xl font-bold">78.5</p>
-          <p className="text-sm text-primary mt-1">-2.5 كجم هذا الشهر</p>
+          <p className="text-3xl font-bold">{overview.currentWeight || 0}</p>
+          <p className="text-sm text-primary mt-1">{overview.weightLost > 0 ? `فقدت ${overview.weightLost}` : 'لم يتغير الوزن'} كجم</p>
         </motion.div>
 
         <motion.div
@@ -135,9 +169,9 @@ export function Home({  onPremiumAction,  isPremium }: HomeProps) {
             </div>
             <Award className="w-5 h-5 text-primary" />
           </div>
-          <p className="text-muted-foreground mb-1">الإنجازات</p>
-          <p className="text-3xl font-bold">12</p>
-          <p className="text-sm text-primary mt-1">وسام جديد</p>
+          <p className="text-muted-foreground mb-1">التمارين المكتملة</p>
+          <p className="text-3xl font-bold">{overview.completedExercises || 0}</p>
+          <p className="text-sm text-primary mt-1">استمر في التقدم!</p>
         </motion.div>
       </div>
 
@@ -153,7 +187,7 @@ export function Home({  onPremiumAction,  isPremium }: HomeProps) {
               <p className="text-muted-foreground">آخر 7 أيام</p>
             </div>
             <div className="px-4 py-2 bg-secondary rounded-2xl">
-              <p className="text-sm text-primary font-semibold">معدل: 2,029 كالوري</p>
+              <p className="text-sm text-primary font-semibold">تتبع السعرات</p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={250}>
@@ -215,6 +249,51 @@ export function Home({  onPremiumAction,  isPremium }: HomeProps) {
         </motion.div>
       </div>
 
+      {/* Weight History Chart */}
+      <motion.div
+        variants={itemVariants}
+        whileHover={{ scale: 1.01 }}
+        className="bg-white p-8 rounded-3xl border border-primary/10 shadow-lg mt-6"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-2xl font-bold mb-1">تطور الوزن</h3>
+            <p className="text-muted-foreground">تتبع تغيرات وزنك بمرور الوقت</p>
+          </div>
+          <div className="px-4 py-2 bg-secondary rounded-2xl">
+            <p className="text-sm text-primary font-semibold">تاريخ الوزن</p>
+          </div>
+        </div>
+        
+        {weightHistoryData && weightHistoryData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={250}>
+            <LineChart data={weightHistoryData}>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.5} vertical={false} />
+              <XAxis dataKey="date" tick={{ fill: '#666', fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis domain={['auto', 'auto']} tick={{ fill: '#666', fontSize: 12 }} axisLine={false} tickLine={false} />
+              <Tooltip 
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
+                itemStyle={{ color: '#009E2A', fontWeight: 'bold' }}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="weight" 
+                stroke="#009E2A" 
+                strokeWidth={4} 
+                dot={{ r: 6, fill: '#009E2A', stroke: '#fff', strokeWidth: 2 }} 
+                activeDot={{ r: 8 }} 
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-[250px] bg-secondary/30 rounded-2xl border border-dashed border-primary/20">
+            <Activity className="w-12 h-12 text-muted-foreground opacity-50 mb-4" />
+            <p className="text-muted-foreground font-semibold">لا توجد بيانات كافية لعرض تطور الوزن</p>
+            <p className="text-sm text-muted-foreground opacity-70">قم بتحديث وزنك بانتظام لرؤية تقدمك هنا</p>
+          </div>
+        )}
+      </motion.div>
+
       <motion.div
         variants={itemVariants}
         className="grid grid-cols-1 md:grid-cols-2 gap-6"
@@ -263,6 +342,8 @@ export function Home({  onPremiumAction,  isPremium }: HomeProps) {
           )}
         </motion.div>
       </motion.div>
+      </>
+      )}
     </motion.div>
   );
 }

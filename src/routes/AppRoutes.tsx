@@ -2,188 +2,175 @@ import React from 'react';
 import { lazy, Suspense, useState } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { MainLayout } from '../layouts/MainLayout';
-import { LoginModal } from '../utils/LoginModal'; // تأكد من المسار الصحيح
+import { LoginModal } from '../utils/LoginModal';
+import { PoliciesModal } from '../utils/PoliciesModal';
+import { useAuthStore } from '../store/authStore';
 
-// استيراد الصفحات
 import { Landing } from '../landing/Landing';
 import DoctorDashboard from '../doctorDashBoard/DoctorDashboard';
-import{ Home } from '../DashBoard/Home';
+import { Home } from '../DashBoard/Home';
 
-const DietPlans = lazy(() => import('../dietPlans/DietPlans'));
-const Workouts = lazy(() => import('../workOuts/Workouts'));
-const Profile = lazy(() => import('../profile/Profile')); // تأكد إن اسم المجلد صح عندك
+const DietPlans    = lazy(() => import('../dietPlans/DietPlans'));
+const Workouts     = lazy(() => import('../workOuts/Workouts'));
+const Profile      = lazy(() => import('../profile/Profile'));
 const Subscription = lazy(() => import('../Subscription/Subscription'));
-const Progress = lazy(() => import('../Progress/Progress'));
-const Messaging = lazy(() => import('../Messaging/Messaging'));
-// 1. تحديث الـ Props لاستقبال دالة تغيير حالة الدخول
-interface AppRoutesProps {
-  isAuthenticated: boolean;
-  setIsAuthenticated: (value: boolean) => void;
-}
+const Messaging    = lazy(() => import('../Messaging/Messaging'));
 
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-[50vh]">
-    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+    <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
   </div>
 );
 
-interface ProtectedRouteProps {
-  isAuthenticated: boolean;
-  children: React.ReactNode; // تأكد أن الكلمة ReactNode وليست Element
-}
-const ProtectedRoute = ({ isAuthenticated, children }: ProtectedRouteProps) => {
-  if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
-  }
-  return children;
+// ✅ مسارات عامة — بس يكون logged in
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated } = useAuthStore();
+  if (!isAuthenticated) return <Navigate to="/" replace />;
+  return <>{children}</>;
 };
 
-export function AppRoutes({ isAuthenticated, setIsAuthenticated }: AppRoutesProps) {
-  // 2. التحكم في المودال والتوجيه من داخل الراوتر
+// ✅ doctor-dashboard — للـ doctor والـ admin بس
+const DoctorRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, user } = useAuthStore();
+  if (!isAuthenticated) return <Navigate to="/" replace />;
+  if (user?.role !== 'doctor' && user?.role !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <>{children}</>;
+};
+
+export function AppRoutes() {
+  const { isAuthenticated } = useAuthStore();
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [isPremiumUser, setIsPremiumUser] = useState(false);
+  const [showPoliciesModal, setShowPoliciesModal] = useState(false);
+  const [isPremiumUser, setIsPremiumUser]   = useState(false);
   const navigate = useNavigate();
 
-  const handleProtectedAction = (action: () => void) => {
-    if (isAuthenticated) {
-      action(); // لو مسجل دخول، نفذ الأكشن (مثلاً: إتمام الدفع)
+  const handleShowLoginFlow = () => {
+    const hasAgreed = localStorage.getItem('policiesAgreed') === 'true';
+    if (hasAgreed) {
+      setShowLoginModal(true);
     } else {
-      setShowLoginModal(true); // لو مش مسجل، افتح نافذة الدخول
+      setShowPoliciesModal(true);
     }
   };
 
-  const handleSubscribe = () => {
-    console.log("تمت عملية الاشتراك بنجاح!");
-    setIsPremiumUser(true); // ده اللي هيغير شكل الصفحة فوراً!
+  const handleAgreePolicies = () => {
+    localStorage.setItem('policiesAgreed', 'true');
+    setShowPoliciesModal(false);
+    setShowLoginModal(true);
   };
-  // دالة تسجيل الخروج
+
+  const handleProtectedAction = (action?: () => void) => {
+    if (isAuthenticated) action?.();
+    else handleShowLoginFlow();
+  };
+
   const handleLogout = () => {
-    setIsAuthenticated(false);
+    useAuthStore.getState().logout();
     navigate('/');
   };
 
-  // 3. دالة تسجيل الدخول التي توجه الطبيب للداشبورد والمريض للرئيسية
-  const handleLogin = (type: 'patient' | 'doctor') => {
-    setIsAuthenticated(true);
+  // ✅ doctor أو admin → doctor-dashboard
+  const handleLogin = () => {
     setShowLoginModal(false);
-
-    if (type === 'doctor') {
-      navigate('/doctor-dashboard'); // توجيه الطبيب
+    const role = useAuthStore.getState().user?.role;
+    if (role === 'doctor' || role === 'admin') {
+      navigate('/doctor-dashboard');
     } else {
-      navigate('/home'); // توجيه المريض
+      navigate('/dashboard');
     }
   };
 
   return (
     <>
       <Routes>
-        {/* نمرر دالة فتح المودال للـ Layout */}
-        <Route element={<MainLayout isAuthenticated={isAuthenticated} onShowLogin={() => setShowLoginModal(true)} />}>
-          
-          {/* المسارات العامة */}
-          <Route path="/" element={<Landing isAuthenticated={isAuthenticated} onShowLogin={() => setShowLoginModal(true)} />} />
-          
-          <Route 
-            path="/diet" 
+        <Route
+          element={
+            <MainLayout
+              isAuthenticated={isAuthenticated}
+              onShowLogin={handleShowLoginFlow}
+            />
+          }
+        >
+          <Route
+            path="/"
             element={
-              <Suspense fallback={<PageLoader />}>
-                <DietPlans isPremium={false} onPremiumAction={() => setShowLoginModal(true)} />
-              </Suspense>
-            } 
-          />
-          
-          <Route 
-            path="/workouts" 
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <Workouts isPremium={false} onPremiumAction={() => setShowLoginModal(true)} />
-              </Suspense>
-            } 
+              <Landing
+                isAuthenticated={isAuthenticated}
+                onShowLogin={handleShowLoginFlow}
+              />
+            }
           />
 
-          <Route 
-  path="/profile" 
-  element={
-    <Suspense fallback={<PageLoader />}>
-      <Profile 
-        isAuthenticated={isAuthenticated} 
-        onProtectedAction={() => setShowLoginModal(true)} 
-        onLogout={handleLogout} 
-      />
-    </Suspense>
-  } 
-/>
+          <Route path="/diet" element={
+            <Suspense fallback={<PageLoader />}>
+              <DietPlans />
+            </Suspense>
+          } />
 
-<Route 
-  path="/subscription" 
-  element={
-    <Suspense fallback={<PageLoader />}>
-      <Subscription 
-        isAuthenticated={isAuthenticated} 
-        isPremium={isPremiumUser} // 👈 التعديل هنا
-        onProtectedAction={handleProtectedAction}
-        onSubscribe={handleSubscribe}
-      />
-    </Suspense>
-  } 
-/>
+          <Route path="/workouts" element={
+            <Suspense fallback={<PageLoader />}>
+              <Workouts />
+            </Suspense>
+          } />
 
-<Route 
-  path="/progress" 
-  element={
-    <Suspense fallback={<PageLoader />}>
-      <Progress 
-        isAuthenticated={isAuthenticated} 
-        onProtectedAction={handleProtectedAction} 
-      />
-    </Suspense>
-  } 
-/>
+          <Route path="/profile" element={
+            <Suspense fallback={<PageLoader />}>
+              <Profile isAuthenticated={isAuthenticated} onProtectedAction={() => setShowLoginModal(true)} onLogout={handleLogout} />
+            </Suspense>
+          } />
 
-<Route 
-  path="/messaging" 
-  element={
-    <Suspense fallback={<PageLoader />}>
-      <Messaging 
-        isPremium={isPremiumUser} // ربطناها بحالة الاشتراك اللي عملناها
-        onPremiumAction={handleProtectedAction} // بتطلب تسجيل الدخول لو مش مسجل
-      />
-    </Suspense>
-  } 
-/>
-          
-          {/* 🟢 المسارات المحمية */}
-          <Route 
-            path="/doctor-dashboard" // تم تصحيح المسار هنا
+          <Route path="/subscription" element={
+            <Suspense fallback={<PageLoader />}>
+              <Subscription isAuthenticated={isAuthenticated} isPremium={isPremiumUser} onProtectedAction={handleProtectedAction} onSubscribe={() => setIsPremiumUser(true)} />
+            </Suspense>
+          } />
+
+          <Route path="/messaging" element={
+            <Suspense fallback={<PageLoader />}>
+              <Messaging isPremium={isPremiumUser} onPremiumAction={handleProtectedAction} />
+            </Suspense>
+          } />
+
+          {/* ✅ doctor و admin */}
+          <Route
+            path="/doctor-dashboard"
             element={
-              <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <DoctorRoute>
                 <DoctorDashboard onLogout={handleLogout} />
-              </ProtectedRoute>
-            } 
+              </DoctorRoute>
+            }
           />
-          <Route 
-  path="/dashboard" 
-  element={
-    <ProtectedRoute isAuthenticated={isAuthenticated}>
-      {/* تمرير الخصائص التي يطلبها المكون فعلاً */}
-      <Home 
-        isAuthenticated={isAuthenticated} 
-        isPremium={false} 
-        onPremiumAction={() => setShowLoginModal(true)} 
-        onProtectedAction={() => setShowLoginModal(true)} 
-      />
-    </ProtectedRoute>
-  } 
-/>
-          
-          {/* مسار افتراضي (Catch-all) */}
+
+          {/* ✅ patient */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Home
+                  isAuthenticated={isAuthenticated}
+                  isPremium={isPremiumUser}
+                  onPremiumAction={() => navigate('/subscription')}
+                  onProtectedAction={() => navigate('/subscription')}
+                />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
 
-      {/* 4. إظهار نافذة تسجيل الدخول هنا لتمكين التوجيه */}
+      {showPoliciesModal && (
+        <PoliciesModal
+          onClose={() => setShowPoliciesModal(false)}
+          onAgree={handleAgreePolicies}
+        />
+      )}
+
       {showLoginModal && (
-        <LoginModal 
+        <LoginModal
           onClose={() => setShowLoginModal(false)}
           onLogin={handleLogin}
         />

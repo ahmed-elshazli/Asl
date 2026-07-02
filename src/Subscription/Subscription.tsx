@@ -1,5 +1,7 @@
 import { motion } from 'motion/react';
-import { Crown,  Sparkles, MessageCircle, Apple, TrendingUp, Zap } from 'lucide-react';
+import { Crown, Sparkles, Loader2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
+import { useSubscriptionPlans } from '../doctorDashBoard/hooks/useSubscriptionPlans';
 
 interface SubscriptionProps {
   onProtectedAction: (action: () => void) => void;
@@ -9,34 +11,11 @@ interface SubscriptionProps {
 }
 
 export default function Subscription({ onProtectedAction,  isPremium, onSubscribe }: SubscriptionProps) {
-  const plans = [
-    {
-      name: 'شهري',
-      price: '99',
-      period: 'شهرياً',
-      popular: false,
-      gradient: 'white',
-      borderGradient: 'primary',
-    },
-    {
-      name: 'سنوي',
-      price: '999',
-      period: 'سنوياً',
-      popular: true,
-      discount: 'وفر 17%',
-      gradient: 'primary',
-      borderGradient: 'primary',
-    },
-  ];
+  const { data: plansData, isLoading, isError } = useSubscriptionPlans();
+  const rawPlans = plansData?.data || plansData || [];
+  const apiPlans = Array.isArray(rawPlans) ? rawPlans : (rawPlans.data || []);
+  const activePlans = apiPlans.filter((p: any) => p.isActive).sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
-  const features = [
-    { text: 'خطط غذائية مخصصة بالكامل', icon: Apple },
-    { text: 'مراسلة مباشرة مع الطبيب', icon: MessageCircle },
-    { text: 'تتبع تقدمك بشكل مفصل', icon: TrendingUp },
-    { text: 'توصيات مدعومة بالذكاء الاصطناعي', icon: Sparkles },
-    { text: 'وصفات طعام حصرية', icon: Apple },
-    { text: 'دعم على مدار الساعة', icon: Zap },
-  ];
 
   const handleSubscribe = (planName: string) => {
     onProtectedAction(() => {
@@ -82,7 +61,7 @@ export default function Subscription({ onProtectedAction,  isPremium, onSubscrib
             <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-3xl p-8">
               <h3 className="text-2xl font-bold mb-6">الميزات المتاحة</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {features.map((feature, idx) => {
+                {[{ title: 'ميزات حصرية', icon: Sparkles }].map((feature: any, idx: number) => {
                   const Icon = feature.icon;
                   return (
                     <motion.div
@@ -103,6 +82,23 @@ export default function Subscription({ onProtectedAction,  isPremium, onSubscrib
             </div>
           </div>
         </motion.div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-12 h-12 text-primary animate-spin" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <h3 className="text-xl font-bold mb-2 text-destructive">عذراً، حدث خطأ أثناء تحميل الباقات</h3>
+        <p className="text-muted-foreground">الرجاء المحاولة مرة أخرى لاحقاً</p>
       </div>
     );
   }
@@ -130,9 +126,14 @@ export default function Subscription({ onProtectedAction,  isPremium, onSubscrib
           <p className="text-muted-foreground text-xl">احصل على تجربة صحية متكاملة ومخصصة</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-          {plans.map((plan, idx) => {
-            const isPremiumPlan = plan.popular;
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+          {activePlans.length === 0 && (
+            <div className="col-span-full text-center p-12 bg-white rounded-3xl border-2 border-dashed border-primary/20">
+              <p className="text-xl font-bold text-muted-foreground">لا توجد باقات متاحة حالياً</p>
+            </div>
+          )}
+          {activePlans.map((plan: any, idx: number) => {
+            const isPremiumPlan = plan.isPopular;
             return (
               <motion.div
                 key={plan.name}
@@ -146,11 +147,11 @@ export default function Subscription({ onProtectedAction,  isPremium, onSubscrib
                     : `bg-white border-2 border-primary/20 shadow-lg`
                 }`}
               >
-                {plan.popular && (
+                {isPremiumPlan && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-                    <div className="px-6 py-2 bg-accent rounded-full text-white font-bold text-sm shadow-lg flex items-center gap-2">
+                    <div className="px-6 py-2 bg-accent rounded-full text-white font-bold text-sm shadow-lg flex items-center gap-2 whitespace-nowrap">
                       <Sparkles className="w-4 h-4" />
-                      <span>الأكثر شعبية</span>
+                      <span>الأكثر طلبًا</span>
                     </div>
                   </div>
                 )}
@@ -160,15 +161,16 @@ export default function Subscription({ onProtectedAction,  isPremium, onSubscrib
                     {plan.name}
                   </h3>
                   <div className="flex items-baseline justify-center gap-2 mb-2">
-                    <span className="text-6xl font-bold">{plan.price}</span>
-                    <span className="text-2xl">ر.س</span>
+                    <span className="text-6xl font-bold">{plan.price || 0}</span>
+                    <span className="text-2xl">{plan.currency || 'ر.س'}</span>
                   </div>
                   <p className={`text-lg ${isPremiumPlan ? 'text-white/80' : 'text-muted-foreground'}`}>
-                    {plan.period}
+                    {plan.billingCycle === 'yearly' ? 'سنوياً' : plan.billingCycle === 'monthly' ? 'شهرياً' : plan.billingCycle}
+                    {plan.durationInDays && <span className="mr-2 text-sm opacity-80">({plan.durationInDays} يوم)</span>}
                   </p>
-                  {plan.discount && (
-                    <div className="inline-block mt-3 px-4 py-1 bg-white/20 backdrop-blur-xl rounded-full">
-                      <span className="font-bold">{plan.discount}</span>
+                  {plan.description && (
+                    <div className="inline-block mt-3 px-4 py-2 bg-white/20 backdrop-blur-xl rounded-2xl text-sm">
+                      <span className="font-bold">{plan.description}</span>
                     </div>
                   )}
                 </div>
@@ -187,11 +189,10 @@ export default function Subscription({ onProtectedAction,  isPremium, onSubscrib
                 </motion.button>
 
                 <div className="space-y-4">
-                  {features.map((feature, featureIdx) => {
-                    const Icon = feature.icon;
+                  {Array.isArray(plan.features) && plan.features.map((featureText: string, featureIdx: number) => {
                     return (
                       <motion.div
-                        key={feature.text}
+                        key={featureIdx}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.3 + featureIdx * 0.05 }}
@@ -200,10 +201,10 @@ export default function Subscription({ onProtectedAction,  isPremium, onSubscrib
                         <div className={`p-1.5 rounded-lg ${
                           isPremiumPlan ? 'bg-white/20' : 'bg-primary/10'
                         }`}>
-                          <Icon className={`w-4 h-4 ${isPremiumPlan ? 'text-white' : 'text-primary'}`} />
+                          <CheckCircle2 className={`w-4 h-4 ${isPremiumPlan ? 'text-white' : 'text-primary'}`} />
                         </div>
                         <span className={isPremiumPlan ? 'text-white' : 'text-foreground'}>
-                          {feature.text}
+                          {featureText}
                         </span>
                       </motion.div>
                     );

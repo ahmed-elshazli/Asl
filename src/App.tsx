@@ -1,17 +1,30 @@
-import { useState } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { AppRoutes } from './routes/AppRoutes';
+import { Toaster } from 'sonner';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000,
+    },
+  },
+});
 
 export default function App() {
-  // حالة تسجيل الدخول الأساسية فقط
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
   return (
-    <Router>
-      <AppRoutes 
-        isAuthenticated={isAuthenticated} 
-        setIsAuthenticated={setIsAuthenticated} 
-      />
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AppRoutes />
+        <Toaster
+          position="top-center"
+          dir="rtl"
+          richColors
+          toastOptions={{ style: { fontFamily: 'inherit' } }}
+        />
+      </Router>
+    </QueryClientProvider>
   );
 }

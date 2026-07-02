@@ -1,7 +1,8 @@
-import { Home, UtensilsCrossed, TrendingUp, MessageCircle, CreditCard, User, Menu, X, Sparkles, Activity, Dumbbell } from 'lucide-react';
+import { Home, UtensilsCrossed, MessageCircle, CreditCard, User, Menu, X, Sparkles, Activity, Dumbbell, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
 
 interface NavigationProps {
   isAuthenticated: boolean;
@@ -10,25 +11,78 @@ interface NavigationProps {
 
 export function Navigation({ isAuthenticated, onShowLogin }: NavigationProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
-  // إضافة مسار (path) لكل تاب ليتوافق مع الراوتر
-  const tabs = [
+  // الاستماع لحدث التثبيت الخاص بالـ PWA
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      // منع المتصفح من إظهار رسالة التثبيت التلقائية
+      e.preventDefault();
+      // حفظ الحدث لاستخدامه عند ضغط الزر
+      setDeferredPrompt(e);
+      // إظهار زر التثبيت في الواجهة
+      // setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // التحقق مما إذا كان التطبيق مثبتاً بالفعل
+    window.addEventListener('appinstalled', () => {
+      // setIsInstallable(false);
+      setDeferredPrompt(null);
+      console.log('PWA was installed');
+    });
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    
+    // إظهار رسالة التثبيت الخاصة بالمتصفح
+    deferredPrompt.prompt();
+    
+    // انتظار اختيار المستخدم
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to the install prompt: ${outcome}`);
+    
+    // تنظيف المتغير بعد الاستخدام
+    setDeferredPrompt(null);
+    // setIsInstallable(false);
+  };
+
+  const { user } = useAuthStore();
+  const isDoctorOrAdmin = user?.role === 'doctor' || user?.role === 'admin';
+  const dashboardPath = isDoctorOrAdmin ? '/doctor-dashboard' : '/dashboard';
+
+  const allTabs = [
     { id: 'landing', path: '/', label: 'الرئيسية', icon: Home, requireAuth: false },
-    { id: 'home', path: '/dashboard', label: 'لوحة التحكم', icon: Activity, requireAuth: true },
-    { id: 'diet', path: '/diet', label: 'الخطط الغذائية', icon: UtensilsCrossed, requireAuth: false },
-    { id: 'workouts', path: '/workouts', label: 'التمارين', icon: Dumbbell, requireAuth: false },
-    { id: 'progress', path: '/progress', label: 'التقدم', icon: TrendingUp, requireAuth: true },
+    { id: 'home', path: dashboardPath, label: 'لوحة التحكم', icon: Activity, requireAuth: true },
+    { id: 'diet', path: '/diet', label: 'الخطط الغذائية', icon: UtensilsCrossed, requireAuth: true },
+    { id: 'workouts', path: '/workouts', label: 'التمارين', icon: Dumbbell, requireAuth: true },
     { id: 'messaging', path: '/messaging', label: 'الرسائل', icon: MessageCircle, requireAuth: true },
     { id: 'subscription', path: '/subscription', label: 'الاشتراك', icon: CreditCard, requireAuth: true },
     { id: 'profile', path: '/profile', label: 'الملف الشخصي', icon: User, requireAuth: true },
   ];
 
-  // تحديد التاب النشط بناءً على مسار الصفحة الحالية
+  let tabs = allTabs;
+  if (!isAuthenticated) {
+    // إخفاء التابات التي تتطلب تسجيل الدخول للزوار
+    tabs = allTabs.filter(t => !t.requireAuth);
+  } else if (isDoctorOrAdmin) {
+    // الطبيب والأدمن لهم تابات محددة
+    tabs = allTabs.filter(t => ['landing', 'home', 'profile'].includes(t.id));
+  } else {
+    // المريض يرى كل شيء ما عدا لوحة تحكم الطبيب (طبعاً تاباته محددة مسبقاً)
+    tabs = allTabs;
+  }
+
   const activeTabId = tabs.find(t => t.path === location.pathname)?.id || 'landing';
 
-  // دالة التنقل باستخدام الراوتر
   const handleTabChange = (path: string, requireAuth: boolean) => {
     if (requireAuth && !isAuthenticated) {
       onShowLogin();
@@ -91,16 +145,39 @@ export function Navigation({ isAuthenticated, onShowLogin }: NavigationProps) {
                   </motion.button>
                 );
               })}
+              
+              {/* زر التثبيت للديسكتوب */}
+              <motion.button
+                onClick={handleInstallClick}
+                className="ml-4 px-5 py-2.5 bg-gradient-to-br from-primary to-accent text-white rounded-full text-sm font-bold shadow-md flex items-center gap-2"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Download className="w-4 h-4" />
+                <span>تثبيت التطبيق</span>
+              </motion.button>
             </div>
 
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="lg:hidden w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center text-white shadow-lg"
-            >
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </motion.button>
+            <div className="flex items-center gap-3 lg:hidden">
+               {/* زر التثبيت للموبايل */}
+              <motion.button
+                onClick={handleInstallClick}
+                className="w-10 h-10 bg-primary/10 text-primary rounded-full flex items-center justify-center"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <Download className="w-5 h-5" />
+              </motion.button>
+
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center text-white shadow-lg"
+              >
+                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </motion.button>
+            </div>
           </div>
         </div>
       </motion.nav>
@@ -121,7 +198,7 @@ export function Navigation({ isAuthenticated, onShowLogin }: NavigationProps) {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -300, opacity: 0 }}
               transition={{ type: 'spring', bounce: 0.2 }}
-              className="fixed top-0 right-0 bottom-0 w-80 bg-white z-50 lg:hidden shadow-2xl"
+              className="fixed top-0 right-0 bottom-0 w-80 bg-white z-50 lg:hidden shadow-2xl overflow-y-auto custom-scrollbar"
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-8">
@@ -146,6 +223,19 @@ export function Navigation({ isAuthenticated, onShowLogin }: NavigationProps) {
                     <X className="w-5 h-5 text-muted-foreground" />
                   </motion.button>
                 </div>
+
+                <motion.button
+                  onClick={() => {
+                    handleInstallClick();
+                    setIsMenuOpen(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 mb-6 px-6 py-4 bg-primary/10 text-primary rounded-2xl font-bold border-2 border-primary/20"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Download className="w-5 h-5" />
+                  <span>تثبيت التطبيق على جهازك</span>
+                </motion.button>
 
                 <nav className="space-y-2">
                   {tabs.map((tab, idx) => {
@@ -174,21 +264,23 @@ export function Navigation({ isAuthenticated, onShowLogin }: NavigationProps) {
                   })}
                 </nav>
 
-                <div className="mt-12 p-6 bg-gradient-to-br from-primary/10 to-accent/10 rounded-3xl border border-primary/20">
-                  <Sparkles className="w-8 h-8 text-primary mb-3" />
-                  <h3 className="font-bold text-lg mb-2">احصل على المميز</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    استمتع بجميع الميزات الحصرية
-                  </p>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleTabChange('/subscription', true)}
-                    className="w-full py-3 bg-gradient-to-br from-primary to-accent text-white rounded-full font-bold shadow-lg"
-                  >
-                    اشترك الآن
-                  </motion.button>
-                </div>
+                {!isDoctorOrAdmin && (
+                  <div className="mt-12 p-6 bg-gradient-to-br from-primary/10 to-accent/10 rounded-3xl border border-primary/20">
+                    <Sparkles className="w-8 h-8 text-primary mb-3" />
+                    <h3 className="font-bold text-lg mb-2">احصل على المميز</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      استمتع بجميع الميزات الحصرية
+                    </p>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleTabChange('/subscription', true)}
+                      className="w-full py-3 bg-gradient-to-br from-primary to-accent text-white rounded-full font-bold shadow-lg"
+                    >
+                      اشترك الآن
+                    </motion.button>
+                  </div>
+                )}
               </div>
             </motion.div>
           </>
