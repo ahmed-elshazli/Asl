@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import { Apple, MessageCircle, TrendingUp, Crown, Sparkles, CheckCircle, Users, Award, Zap, Shield, Heart, Activity, Star, Info, Quote } from 'lucide-react';
 import { usePublishedReviews, useAboutUsPublic } from './hooks/useLandingData';
+import { AnimatedText } from '../components/ui/AnimatedText';
 
 const FacebookIcon = (props: any) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -120,11 +121,14 @@ export function Landing({ onShowLogin, isAuthenticated, userName }: LandingProps
               <span className="text-white font-semibold">ابدأ رحلتك الصحية اليوم</span>
             </motion.div>
 
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 text-white">
-              رحلتك نحو
-              <span className="block mt-3 bg-gradient-to-r from-white via-accent/90 to-white bg-clip-text ">
-                حياة صحية أفضل
-              </span>
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 text-white flex flex-col items-center">
+              <AnimatedText text="رحلتك نحو" el="span" />
+              <AnimatedText 
+                text="حياة صحية أفضل" 
+                el="span" 
+                className="mt-3 bg-gradient-to-r from-white via-accent/90 to-white bg-clip-text "
+                staggerDelay={0.03}
+              />
             </h1>
             <p className="text-xl md:text-2xl text-white/90 mb-10 max-w-3xl mx-auto leading-relaxed font-medium">
               نظام تغذية ذكي مدعوم بالخبرة الطبية لمساعدتك في تحقيق أهدافك الصحية بطريقة علمية ومستدامة

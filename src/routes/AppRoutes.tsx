@@ -5,6 +5,7 @@ import { MainLayout } from '../layouts/MainLayout';
 import { LoginModal } from '../utils/LoginModal';
 import { PoliciesModal } from '../utils/PoliciesModal';
 import { useAuthStore } from '../store/authStore';
+import { useLogout } from '../login/hooks/useLogout';
 
 import { Landing } from '../landing/Landing';
 import DoctorDashboard from '../doctorDashBoard/DoctorDashboard';
@@ -66,9 +67,10 @@ export function AppRoutes() {
     else handleShowLoginFlow();
   };
 
+  const { mutate: logoutAPI } = useLogout();
+
   const handleLogout = () => {
-    useAuthStore.getState().logout();
-    navigate('/');
+    logoutAPI();
   };
 
   // ✅ doctor أو admin → doctor-dashboard

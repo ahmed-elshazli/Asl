@@ -15,7 +15,7 @@ export default defineConfig({
         enabled: true
       },
       // الملفات دي لازم تكون موجودة في مجلد public
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'masked-icon.svg'],
       manifest: {
         name: 'أصِل',
         short_name: 'Asl',

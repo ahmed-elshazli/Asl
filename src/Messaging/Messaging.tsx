@@ -71,9 +71,13 @@ export default function Messaging({ onPremiumAction, isPremium }: MessagingProps
     }
   }, [conversations, selectedConversationId]);
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom (with timeout to ensure DOM paints new messages first)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messages.length > 0) {
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 50); // مهلة صغيرة للسماح لـ React بإنهاء عملية التحديث وبناء عناصر الـ DOM الجديدة
+    }
   }, [messages]);
 
   const handleSendMessage = async () => {
@@ -84,20 +88,18 @@ export default function Messaging({ onPremiumAction, isPremium }: MessagingProps
       fileToSend = await compressImage(selectedFile);
     }
 
-    sendMessage(
-      {
-        conversationId: selectedConversationId,
-        content: messageText.trim() || 'ملف مرفق',
-        file: fileToSend || undefined,
-      },
-      {
-        onSuccess: () => {
-          setMessageText('');
-          setSelectedFile(null);
-          setFilePreview(null);
-        },
-      }
-    );
+    // إفراغ الحقول فوراً (Optimistic — لا ننتظر استجابة السيرفر)
+    const textToSend = messageText.trim();
+    const fileRef = fileToSend;
+    setMessageText('');
+    setSelectedFile(null);
+    setFilePreview(null);
+
+    sendMessage({
+      conversationId: selectedConversationId,
+      content: textToSend || undefined,
+      file: fileRef || undefined,
+    });
   };
 
   const removeFile = () => {
@@ -359,12 +361,12 @@ export default function Messaging({ onPremiumAction, isPremium }: MessagingProps
 
                       return (
                         <motion.div
-                          key={msg._id}
+                          key={msg._id || `temp-${Date.now()}-${Math.random()}`}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           className={`flex w-full group ${isMe ? 'justify-end' : 'justify-start'} ${deletingId === msg._id ? 'opacity-50' : ''}`}
                         >
-                          {isMe && (
+                          {isMe && !msg.isDeleted && (
                             <button
                             onClick={() => setMessageToDelete(msg._id)}
                             disabled={isDeleting}
@@ -379,26 +381,36 @@ export default function Messaging({ onPremiumAction, isPremium }: MessagingProps
                             </button>
                           )}
                           <div className={`max-w-[75%] min-w-[80px] px-4 py-3 rounded-2xl shadow-sm flex flex-col ${
-                            isMe
-                              ? 'bg-gradient-to-br from-primary to-accent text-white rounded-bl-sm'
-                              : 'bg-white border border-primary/10 text-foreground rounded-br-sm'
+                            msg.isDeleted
+                              ? 'bg-secondary/40 border border-dashed border-muted text-muted-foreground italic'
+                              : isMe
+                                ? 'bg-gradient-to-br from-primary to-accent text-white rounded-bl-sm'
+                                : 'bg-white border border-primary/10 text-foreground rounded-br-sm'
                           }`}>
-                            {msg.content && msg.content !== 'ملف مرفق' && (
-                              <p className="mb-1 leading-relaxed text-sm text-start break-words">{msg.content}</p>
-                            )}
-                            {msg.fileUrl && (
-                              <div className="mt-2">
-                                {/\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) ? (
-                                  <img src={msg.fileUrl} alt="Attachment" className="max-w-full rounded-lg object-contain max-h-[250px]" />
-                                ) : (
-                                  <a href={msg.fileUrl} target="_blank" rel="noreferrer" className="text-xs underline flex items-center gap-1 opacity-80 hover:opacity-100">
-                                    <Paperclip className="w-3 h-3" />
-                                    عرض المرفق
-                                  </a>
+                            {msg.isDeleted ? (
+                              <p className="mb-1 text-sm text-start flex items-center gap-2 opacity-80">
+                                🚫 تم حذف هذه الرسالة
+                              </p>
+                            ) : (
+                              <>
+                                {msg.fileUrl && (
+                                  <div className="mb-2">
+                                    {/\.(jpg|jpeg|png|gif|webp)$/i.test(msg.fileUrl) || msg.fileUrl.startsWith('blob:') ? (
+                                      <img src={msg.fileUrl} alt="Attachment" className="max-w-full rounded-lg object-contain max-h-[250px]" />
+                                    ) : (
+                                      <a href={msg.fileUrl} target="_blank" rel="noreferrer" className="text-xs underline flex items-center gap-1 opacity-80 hover:opacity-100">
+                                        <Paperclip className="w-3 h-3" />
+                                        عرض المرفق
+                                      </a>
+                                    )}
+                                  </div>
                                 )}
-                              </div>
+                                {msg.content && msg.content !== 'ملف مرفق' && (
+                                  <p className="mb-1 leading-relaxed text-sm text-start break-words">{msg.content}</p>
+                                )}
+                              </>
                             )}
-                            <p className={`text-[10px] mt-1 text-end ${isMe ? 'text-white/70' : 'text-muted-foreground'}`}>
+                            <p className={`text-[10px] mt-1 text-end ${msg.isDeleted ? 'text-muted-foreground/70' : isMe ? 'text-white/70' : 'text-muted-foreground'}`}>
                               {new Date(msg.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
                             </p>
                           </div>

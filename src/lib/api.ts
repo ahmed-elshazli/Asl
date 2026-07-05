@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
+import { queryClient } from '../App';
 
 // ==========================================
 // 1. إعداد الـ Base URL
@@ -45,11 +46,12 @@ api.interceptors.response.use(
   (error) => {
     // لو الرد فيه خطأ (مثلاً 401 Unauthorized - يعني التوكن انتهى أو غير صالح)
     if (error.response && error.response.status === 401) {
-      // هنعمل تسجيل خروج للمستخدم عشان يدخل من أول وجديد
+      // 1. هنعمل تسجيل خروج للمستخدم من حالة التطبيق
       useAuthStore.getState().logout();
+      // 2. هنمسح الكاش كله عشان مفيش queries قديمة تفضل تحاول تجيب بيانات وتضرب 401 تاني
+      queryClient.clear();
       
-      // هنشيل التحويل الإجباري للصفحة الرئيسية لأنه بيعمل مشكلة Refresh لا نهائي
-      // لو محتاجين نحوله، يفضل يتم التعامل معاها من خلال React Router في الـ UI
+      // التوجيه بيحصل تلقائي من خلال ProtectedRoute في React Router
     }
     
     return Promise.reject(error);
