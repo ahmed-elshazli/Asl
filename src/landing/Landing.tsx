@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { Apple, MessageCircle, TrendingUp, Crown, Sparkles, CheckCircle, Users, Award, Zap, Shield, Heart, Activity, Star, Info, Quote } from 'lucide-react';
 import { usePublishedReviews, useAboutUsPublic } from './hooks/useLandingData';
 import { AnimatedText } from '../components/ui/AnimatedText';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 const FacebookIcon = (props: any) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -26,6 +27,7 @@ interface LandingProps {
 export function Landing({ onShowLogin, isAuthenticated, userName }: LandingProps) {
   const { data: reviews } = usePublishedReviews();
   const { data: aboutUs } = useAboutUsPublic();
+  useDocumentTitle('الصفحة الرئيسية');
   const features = [
     {
       icon: Apple,

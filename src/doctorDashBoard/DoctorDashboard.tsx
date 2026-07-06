@@ -1,7 +1,9 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { Menu } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useCreateConversation } from '../Messaging/hooks/useChat';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 // import type { Patient } from './components/doctorDashboardData';
 
@@ -45,9 +47,34 @@ interface DoctorDashboardProps {
   onLogout: () => void;
 }
 
+// ─── خريطة عناوين التبويبات ───────────────────────────────────────────────
+const SECTION_TITLES: Record<string, string> = {
+  overview: 'لوحة التحكم',
+  patients: 'المرضى',
+  messages: 'الرسائل',
+  plans: 'الخطط الغذائية',
+  workouts: 'التمارين والبرامج',
+  'subscription-plans': 'باقات الاشتراك',
+  reviews: 'التقييمات',
+  'about-us': 'من نحن',
+};
+
+const VALID_SECTIONS = Object.keys(SECTION_TITLES);
+
 export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
-  // ─── UI ───────────────────────────────────────────────────────────────────
-  const [activeSection, setActiveSection] = useState('overview');
+  // ─── URL-Persisted Tab State ─────────────────────────────────────────────
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeSection = useMemo(() => {
+    const tab = searchParams.get('tab');
+    return tab && VALID_SECTIONS.includes(tab) ? tab : 'overview';
+  }, [searchParams]);
+
+  const setActiveSection = (section: string) => {
+    setSearchParams({ tab: section }, { replace: true });
+  };
+
+  // ─── Dynamic Document Title ─────────────────────────────────────────────
+  useDocumentTitle(SECTION_TITLES[activeSection] || 'لوحة التحكم');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // ─── Patients ─────────────────────────────────────────────────────────────

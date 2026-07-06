@@ -3,6 +3,7 @@ import { Sparkles, Crown, TrendingUp, Award, Apple, Activity, Loader2 } from 'lu
 import { AreaChart, Area, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { usePatientDashboard, useWeightHistory } from './hooks/usePatientDashboard';
 import { useMyPlans } from '../dietPlans/hooks/usePlans';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 interface HomeProps {
   onProtectedAction: (action: () => void) => void;
@@ -17,6 +18,8 @@ export function Home({  onPremiumAction,  isPremium }: HomeProps) {
   const { data: userPlans, isLoading: isLoadingPlans } = useMyPlans();
   const apiPlan = userPlans?.[0];
   const isLoading = isLoadingDashboard || isLoadingWeight || isLoadingPlans;
+
+  useDocumentTitle('لوحة التحكم');
 
   const overview = dashboard?.overview || {};
 
