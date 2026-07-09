@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { X, UserPlus, Loader2, CheckCircle2, User, Mail, Lock, Phone, Calendar, Activity, ShieldCheck } from 'lucide-react';
+import { X, UserPlus, Loader2, CheckCircle2, User, Mail, Lock, Phone, Calendar, Activity, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { useCreateUser } from '../hooks/useDoctorUsers';
 import type { CreateUserPayload } from '../api/doctorUsersApi';
@@ -31,7 +31,8 @@ export function AddPatientModal({ onClose }: AddPatientModalProps) {
     gender: 'male', age: '', height: '', weight: '',
     country: 'مصر', role: 'patient',
   });
-  const [countryCode, setCountryCode] = useState('+20');
+  const [countryCode, setCountryCode] = useState('+966');
+  const [showPassword, setShowPassword] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const { mutate: createUser, isPending, error } = useCreateUser();
@@ -122,8 +123,11 @@ export function AddPatientModal({ onClose }: AddPatientModalProps) {
 
             <div className="relative">
               <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <input type="password" className="w-full pr-12 pl-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary transition-all disabled:opacity-50" placeholder="كلمة المرور *"
+              <input type={showPassword ? "text" : "password"} className="w-full pr-12 pl-12 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary transition-all disabled:opacity-50" placeholder="كلمة المرور *"
                 value={form.password} onChange={setField('password')} disabled={isPending} required />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
             </div>
 
             <div className="relative flex items-center bg-secondary rounded-2xl transition-all disabled:opacity-50 focus-within:ring-2 focus-within:ring-primary">

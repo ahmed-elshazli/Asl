@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { X, User, Lock, Sparkles, Mail, Phone, Calendar, Activity, CheckCircle, Key } from 'lucide-react';
+import { X, User, Lock, Sparkles, Mail, Phone, Calendar, Activity, CheckCircle, Key, Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { useLogin } from '../login/hooks/useLogin';
 import { useRegister } from '../login/hooks/useRegister';
@@ -40,6 +40,7 @@ export function LoginModal({ onClose, onLogin }: LoginModalProps) {
   const [countryCode, setCountryCode] = useState('+966');
   const [resetCode, setResetCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   const [isSuccess, setIsSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -224,7 +225,10 @@ export function LoginModal({ onClose, onLogin }: LoginModalProps) {
                 {(mode === 'login' || mode === 'register' || mode === 'reset-password') && (
                   <div className="relative">
                     <Lock className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <input type="password" value={mode === 'reset-password' ? newPassword : password} onChange={(e) => mode === 'reset-password' ? setNewPassword(e.target.value) : setPassword(e.target.value)} placeholder={mode === 'reset-password' ? "كلمة المرور الجديدة" : "كلمة المرور"} required disabled={isLoading} className="w-full pr-12 pl-6 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary transition-all disabled:opacity-50" />
+                    <input type={showPassword ? "text" : "password"} value={mode === 'reset-password' ? newPassword : password} onChange={(e) => mode === 'reset-password' ? setNewPassword(e.target.value) : setPassword(e.target.value)} placeholder={mode === 'reset-password' ? "كلمة المرور الجديدة" : "كلمة المرور"} required disabled={isLoading} className="w-full pr-12 pl-12 py-4 bg-secondary rounded-2xl border-none outline-none focus:ring-2 focus:ring-primary transition-all disabled:opacity-50" />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
                   </div>
                 )}
 

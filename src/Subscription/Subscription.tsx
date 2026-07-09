@@ -1,7 +1,9 @@
 import { motion } from 'motion/react';
 import { Crown, Sparkles, Loader2 } from 'lucide-react';
 import { CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
 import { useSubscriptionPlans } from '../doctorDashBoard/hooks/useSubscriptionPlans';
+import { CheckoutModal } from './components/CheckoutModal';
 
 interface SubscriptionProps {
   onProtectedAction: (action: () => void) => void;
@@ -16,12 +18,19 @@ export default function Subscription({ onProtectedAction,  isPremium, onSubscrib
   const apiPlans = Array.isArray(rawPlans) ? rawPlans : (rawPlans.data || []);
   const activePlans = apiPlans.filter((p: any) => p.isActive).sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
+  const [selectedPlan, setSelectedPlan] = useState<any>(null);
+  const [showCheckout, setShowCheckout] = useState(false);
 
-  const handleSubscribe = (planName: string) => {
+  const handleSubscribeClick = (plan: any) => {
     onProtectedAction(() => {
-      console.log('Subscribing to:', planName);
-      onSubscribe();
+      setSelectedPlan(plan);
+      setShowCheckout(true);
     });
+  };
+
+  const handleCheckoutConfirm = () => {
+    setShowCheckout(false);
+    onSubscribe();
   };
 
   if (isPremium) {
@@ -178,7 +187,7 @@ export default function Subscription({ onProtectedAction,  isPremium, onSubscrib
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => handleSubscribe(plan.name)}
+                  onClick={() => handleSubscribeClick(plan)}
                   className={`w-full py-4 rounded-full font-bold text-lg shadow-lg mb-8 ${
                     isPremiumPlan
                       ? 'bg-white text-primary hover:shadow-2xl'
@@ -228,6 +237,13 @@ export default function Subscription({ onProtectedAction,  isPremium, onSubscrib
           </p>
         </motion.div>
       </motion.div>
+
+      <CheckoutModal
+        isOpen={showCheckout}
+        plan={selectedPlan}
+        onClose={() => setShowCheckout(false)}
+        onConfirm={handleCheckoutConfirm}
+      />
     </div>
   );
 }

@@ -43,6 +43,17 @@ import { ProgramUsersModal }   from './modals/ProgramUsersModal';
 import { PatientStatsModal }   from './modals/PatientStatsModal';
 import { UserPlansModal }      from './modals/UserPlansModal';
 
+// Components - Payment Methods & Results
+import { PaymentMethodsSection } from './components/sections/PaymentMethodsSection';
+import { AddPaymentMethodModal } from './components/modals/AddPaymentMethodModal';
+import { EditPaymentMethodModal } from './components/modals/EditPaymentMethodModal';
+import type { PaymentMethod } from './api/paymentMethodsApi';
+
+import { ResultsSection } from './components/sections/ResultsSection';
+import { AddResultModal } from './components/modals/AddResultModal';
+import { EditResultModal } from './components/modals/EditResultModal';
+import type { Result } from './api/resultsApi';
+
 interface DoctorDashboardProps {
   onLogout: () => void;
 }
@@ -55,7 +66,9 @@ const SECTION_TITLES: Record<string, string> = {
   plans: 'الخطط الغذائية',
   workouts: 'التمارين والبرامج',
   'subscription-plans': 'باقات الاشتراك',
+  'payment-methods': 'طرق الدفع',
   reviews: 'التقييمات',
+  results: 'النتائج',
   'about-us': 'من نحن',
 };
 
@@ -105,6 +118,14 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
 
   // ─── Doctor ───────────────────────────────────────────────────────────────
   const [showChangePassword, setShowChangePassword] = useState(false);
+
+  // ─── Payment Methods ──────────────────────────────────────────────────────
+  const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false);
+  const [editingPaymentMethod, setEditingPaymentMethod] = useState<PaymentMethod | null>(null);
+
+  // ─── Results ──────────────────────────────────────────────────────────────
+  const [showAddResult, setShowAddResult] = useState(false);
+  const [editingResult, setEditingResult] = useState<Result | null>(null);
 
   // ─── Chat Mutation ────────────────────────────────────────────────────────
   const { mutate: createConversation } = useCreateConversation();
@@ -192,7 +213,19 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
             />
           )}
           {activeSection === 'subscription-plans' && <SubscriptionPlansSection />}
+          {activeSection === 'payment-methods' && (
+            <PaymentMethodsSection
+              onShowAddModal={() => setShowAddPaymentMethod(true)}
+              onShowEditModal={setEditingPaymentMethod}
+            />
+          )}
           {activeSection === 'reviews' && <ReviewsSection />}
+          {activeSection === 'results' && (
+            <ResultsSection
+              onShowAddModal={() => setShowAddResult(true)}
+              onShowEditModal={setEditingResult}
+            />
+          )}
           {activeSection === 'about-us' && <AboutUsSection />}
         </main>
       </div>
@@ -337,6 +370,39 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
           />
         )}
       </AnimatePresence>
+
+      {/* ─── Payment Methods Modals ─── */}
+      <AnimatePresence>
+        {showAddPaymentMethod && (
+          <AddPaymentMethodModal onClose={() => setShowAddPaymentMethod(false)} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editingPaymentMethod && (
+          <EditPaymentMethodModal
+            method={editingPaymentMethod}
+            onClose={() => setEditingPaymentMethod(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ─── Results Modals ─── */}
+      <AnimatePresence>
+        {showAddResult && (
+          <AddResultModal onClose={() => setShowAddResult(false)} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {editingResult && (
+          <EditResultModal
+            result={editingResult}
+            onClose={() => setEditingResult(null)}
+          />
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

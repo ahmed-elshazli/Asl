@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { Activity, Users, MessageCircle, Apple, LogOut, X, Lock, Dumbbell, CreditCard, Home, Info, Star } from 'lucide-react';
+import { Activity, Users, MessageCircle, Apple, LogOut, X, Lock, Dumbbell, CreditCard, Home, Info, Star, FileText } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { useMyProfile } from '../../users/hooks/useUsers';
 import { useNavigate } from 'react-router-dom';
@@ -20,7 +20,9 @@ const NAV_ITEMS = [
   { id: 'plans',      label: 'الخطط الغذائية',   icon: Apple },
   { id: 'workouts',   label: 'التمارين والبرامج',icon: Dumbbell },
   { id: 'subscription-plans', label: 'باقات الاشتراك', icon: CreditCard },
+  { id: 'payment-methods', label: 'طرق الدفع',      icon: CreditCard },
   { id: 'reviews',    label: 'التقييمات',        icon: Star },
+  { id: 'results',    label: 'النتائج',          icon: FileText },
   { id: 'about-us',   label: 'من نحن',           icon: Info },
 ];
 

@@ -1,8 +1,11 @@
 import { motion } from 'motion/react';
-import { Apple, MessageCircle, TrendingUp, Crown, Sparkles, CheckCircle, Users, Award, Zap, Shield, Heart, Activity, Star, Info, Quote } from 'lucide-react';
+import { Apple, MessageCircle, TrendingUp, Crown, Sparkles, CheckCircle, Users, Award, Zap, Shield, Heart, Activity, Star, Info, Quote, Maximize2 } from 'lucide-react';
 import { usePublishedReviews, useAboutUsPublic } from './hooks/useLandingData';
+import { useAllResults } from '../doctorDashBoard/hooks/useResults';
 import { AnimatedText } from '../components/ui/AnimatedText';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { ImageLightbox } from '../components/ui/ImageLightbox';
+import { useState } from 'react';
 
 const FacebookIcon = (props: any) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -25,8 +28,15 @@ interface LandingProps {
 }
 
 export function Landing({ onShowLogin, isAuthenticated, userName }: LandingProps) {
+  const [lightboxState, setLightboxState] = useState<{ isOpen: boolean; images: string[]; initialIndex: number }>({
+    isOpen: false,
+    images: [],
+    initialIndex: 0,
+  });
   const { data: reviews } = usePublishedReviews();
   const { data: aboutUs } = useAboutUsPublic();
+  const { data: resultsResponse } = useAllResults(1, 100);
+  const results = resultsResponse?.data || [];
   useDocumentTitle('الصفحة الرئيسية');
   const features = [
     {
@@ -570,6 +580,88 @@ export function Landing({ onShowLogin, isAuthenticated, userName }: LandingProps
         </section>
       )}
 
+      {/* Results Section */}
+      {results && results.length > 0 && (
+        <section className="px-6 md:px-8 py-24 bg-secondary/30">
+          <div className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-16"
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                whileInView={{ scale: 1 }}
+                viewport={{ once: true }}
+                className="inline-flex items-center gap-2 px-5 py-2 bg-primary/10 rounded-full mb-6"
+              >
+                <Activity className="w-5 h-5 text-primary" />
+                <span className="text-primary font-bold">قصص نجاح وتطور المرضى</span>
+              </motion.div>
+              <h2 className="text-4xl md:text-5xl font-bold mb-4">نتائج ملهمة</h2>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                شاهد التطور الملحوظ والنتائج المذهلة التي حققها مشتركينا
+              </p>
+            </motion.div>
+
+            <div className="flex flex-col gap-12">
+              {results.map((result: any, idx: number) => (
+                <motion.div
+                  key={result.id || result._id || idx}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-50px" }}
+                  transition={{ duration: 0.5 }}
+                  className="bg-white rounded-[2.5rem] overflow-hidden shadow-md border border-primary/5 flex flex-col p-6 md:p-8"
+                >
+                  {/* Images Collage */}
+                  {result.images && result.images.length > 0 && (
+                    <div className={`grid gap-4 mb-8 ${
+                      result.images.length === 1 ? 'grid-cols-1 max-w-2xl mx-auto' : 
+                      result.images.length === 2 ? 'grid-cols-1 md:grid-cols-2' : 
+                      'grid-cols-1 md:grid-cols-3'
+                    }`}>
+                      {result.images.map((imgUrl: string, imgIdx: number) => (
+                        <div 
+                          key={imgIdx} 
+                          className="relative aspect-square md:aspect-auto md:h-80 rounded-2xl overflow-hidden bg-secondary/50 group cursor-pointer"
+                          onClick={() => setLightboxState({ isOpen: true, images: result.images, initialIndex: imgIdx })}
+                        >
+                          <img 
+                            src={imgUrl} 
+                            alt={`نتيجة ${imgIdx + 1}`} 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                          />
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+                            <Maximize2 className="w-8 h-8 text-white drop-shadow-lg" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Result Details */}
+                  <div className="flex flex-col md:flex-row gap-6 justify-between items-start">
+                    <div className="flex-1">
+                      <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 bg-secondary rounded-lg text-sm text-muted-foreground font-medium">
+                        <Activity className="w-4 h-4" />
+                        {new Date(result.createdAt).toLocaleDateString('ar-EG', {
+                          year: 'numeric', month: 'long', day: 'numeric'
+                        })}
+                      </div>
+                      <p className="text-foreground text-lg leading-relaxed whitespace-pre-wrap">
+                        {result.description}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       <section className="px-6 md:px-8 py-24 bg-gradient-to-br from-primary via-primary to-accent text-white relative overflow-hidden">
     <div className="max-w-4xl mx-auto text-center relative">
        <motion.div
@@ -606,6 +698,13 @@ export function Landing({ onShowLogin, isAuthenticated, userName }: LandingProps
           </motion.div>
         </div>
       </section>
+
+      <ImageLightbox
+        isOpen={lightboxState.isOpen}
+        images={lightboxState.images}
+        initialIndex={lightboxState.initialIndex}
+        onClose={() => setLightboxState(s => ({ ...s, isOpen: false }))}
+      />
     </>
   );
 }
