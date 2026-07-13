@@ -2,6 +2,7 @@ import { motion } from 'motion/react';
 import { useState, useEffect } from 'react';
 import { Star, MessageSquare, Save, Trash2, Edit2, CheckCircle2, Loader2 } from 'lucide-react';
 import { useMyReview, useCreateReview, useUpdateReview, useDeleteMyReview } from '../../users/hooks/usePatientReviews';
+import ConfirmModal from '../../components/ConfirmModal';
 
 export function PatientReviewCard() {
   const { data: myReview, isLoading } = useMyReview();
@@ -12,6 +13,7 @@ export function PatientReviewCard() {
   const [isEditing, setIsEditing] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (myReview && !isEditing) {
@@ -34,9 +36,7 @@ export function PatientReviewCard() {
   };
 
   const handleDelete = () => {
-    if (confirm('هل أنت متأكد من حذف تقييمك؟')) {
-      deleteReview();
-    }
+    setShowDeleteConfirm(true);
   };
 
   if (isLoading) {
@@ -172,6 +172,20 @@ export function PatientReviewCard() {
           )}
         </div>
       </div>
+      
+      <ConfirmModal
+        isOpen={showDeleteConfirm}
+        title="حذف التقييم"
+        message="هل أنت متأكد من حذف تقييمك؟ لا يمكن التراجع عن هذا الإجراء."
+        confirmText="حذف"
+        isLoading={isDeleting}
+        onConfirm={() => {
+          deleteReview(undefined, {
+            onSettled: () => setShowDeleteConfirm(false)
+          });
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
     </motion.div>
   );
 }

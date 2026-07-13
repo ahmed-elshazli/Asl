@@ -9,6 +9,7 @@ import {
   useToggleSubscriptionPlanStatus
 } from '../../hooks/useSubscriptionPlans';
 import type { SubscriptionPlan, CreateSubscriptionPlanPayload } from '../../api/subscriptionPlansApi';
+import ConfirmModal from '../../../components/ConfirmModal';
 
 export default function SubscriptionPlansSection() {
   const { data: plansData, isLoading, isError, error } = useSubscriptionPlans();
@@ -23,6 +24,7 @@ export default function SubscriptionPlansSection() {
   const { mutate: createPlan, isPending: isCreating } = useCreateSubscriptionPlan();
   const { mutate: updatePlan, isPending: isUpdating } = useUpdateSubscriptionPlan();
   const { mutate: deletePlan, isPending: isDeleting } = useDeleteSubscriptionPlan();
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const { mutate: toggleStatus, isPending: isToggling } = useToggleSubscriptionPlanStatus();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -225,11 +227,7 @@ export default function SubscriptionPlansSection() {
                     <Power className="w-4 h-4" /> {plan.isActive ? 'إيقاف' : 'تفعيل'}
                   </button>
                   <button
-                    onClick={() => {
-                      if (window.confirm('هل أنت متأكد من حذف هذه الباقة؟')) {
-                        deletePlan(plan._id || plan.id);
-                      }
-                    }}
+                    onClick={() => setDeleteTarget(plan._id || plan.id)}
                     disabled={isDeleting}
                     className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-colors flex items-center justify-center"
                     title="حذف الباقة"
@@ -364,6 +362,22 @@ export default function SubscriptionPlansSection() {
           </div>
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="حذف الباقة"
+        message="هل أنت متأكد من حذف هذه الباقة؟ لا يمكن التراجع عن هذا الإجراء."
+        confirmText="حذف"
+        isLoading={isDeleting}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deletePlan(deleteTarget, {
+              onSettled: () => setDeleteTarget(null)
+            });
+          }
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

@@ -28,7 +28,7 @@ export function Home({  onPremiumAction,  isPremium }: HomeProps) {
     Tue: 'الثلاثاء', Wed: 'الأربعاء', Thu: 'الخميس', Fri: 'الجمعة'
   };
 
-  // ترتيب الأيام عشان الشارت (إذا كانت راجعة من الباك)
+  // ترتيب الأيام عشان الشارت
   const caloriesData = overview.weeklyCaloriesBurned?.length > 0 
     ? overview.weeklyCaloriesBurned.map((d: any) => ({
         day: daysMap[d.day] || d.day,
@@ -201,6 +201,11 @@ export function Home({  onPremiumAction,  isPremium }: HomeProps) {
                   <stop offset="95%" stopColor="#00C236" stopOpacity={0.05} />
                 </linearGradient>
               </defs>
+              <XAxis dataKey="day" tick={{ fill: '#666', fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: '#666', fontSize: 12 }} axisLine={false} tickLine={false} />
+              <Tooltip 
+                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
+              />
               <Area
                 type="monotone"
                 dataKey="calories"
@@ -270,10 +275,10 @@ export function Home({  onPremiumAction,  isPremium }: HomeProps) {
         
         {weightHistoryData && weightHistoryData.length > 0 ? (
           <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={weightHistoryData}>
+            <LineChart data={weightHistoryData.map((d:any) => ({ date: new Date(d.createdAt || d.date).toLocaleDateString('ar-EG', {month: 'short', day: 'numeric'}), weight: d.weight }))}>
               <CartesianGrid strokeDasharray="3 3" opacity={0.5} vertical={false} />
               <XAxis dataKey="date" tick={{ fill: '#666', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis domain={['auto', 'auto']} tick={{ fill: '#666', fontSize: 12 }} axisLine={false} tickLine={false} />
+              <YAxis domain={['dataMin - 5', 'dataMax + 5']} tick={{ fill: '#666', fontSize: 12 }} axisLine={false} tickLine={false} />
               <Tooltip 
                 contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}
                 itemStyle={{ color: '#009E2A', fontWeight: 'bold' }}

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAllResults, useDeleteResult } from '../../hooks/useResults';
 import type { Result } from '../../api/resultsApi';
 import { ImageLightbox } from '../../../components/ui/ImageLightbox';
+import ConfirmModal from '../../../components/ConfirmModal';
 
 interface ResultsSectionProps {
   onShowAddModal: () => void;
@@ -13,6 +14,7 @@ interface ResultsSectionProps {
 export function ResultsSection({ onShowAddModal, onShowEditModal }: ResultsSectionProps) {
   const { data: resultsResponse, isLoading } = useAllResults();
   const { mutate: deleteResult, isPending: isDeleting } = useDeleteResult();
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   
   const [lightboxState, setLightboxState] = useState<{ isOpen: boolean; images: string[]; initialIndex: number }>({
     isOpen: false,
@@ -114,11 +116,7 @@ export function ResultsSection({ onShowAddModal, onShowEditModal }: ResultsSecti
                       <Edit className="w-4 h-4" /> تعديل
                     </button>
                     <button
-                      onClick={() => {
-                        if (window.confirm('هل أنت متأكد من حذف هذه النتيجة؟')) {
-                          deleteResult(result.id);
-                        }
-                      }}
+                      onClick={() => setDeleteTarget(result.id)}
                       disabled={isDeleting}
                       className="p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl transition-colors"
                     >
@@ -137,6 +135,22 @@ export function ResultsSection({ onShowAddModal, onShowEditModal }: ResultsSecti
         images={lightboxState.images}
         initialIndex={lightboxState.initialIndex}
         onClose={() => setLightboxState(s => ({ ...s, isOpen: false }))}
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="حذف النتيجة"
+        message="هل أنت متأكد من حذف هذه النتيجة؟ لا يمكن التراجع عن هذا الإجراء."
+        confirmText="حذف"
+        isLoading={isDeleting}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteResult(deleteTarget, {
+              onSettled: () => setDeleteTarget(null)
+            });
+          }
+        }}
+        onCancel={() => setDeleteTarget(null)}
       />
     </motion.div>
   );

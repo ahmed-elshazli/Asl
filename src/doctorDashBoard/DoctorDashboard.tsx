@@ -11,12 +11,13 @@ import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { DoctorSidebar } from './components/DoctorSidebar';
 
 // Sections
-import { OverviewSection }  from './components/sections/OverviewSection';
+import OverviewSection  from './components/sections/OverviewSection';
 import { PatientsSection }  from './components/sections/PatientsSection';
 import { MessagesSection }  from './components/sections/MessagesSection';
 import { PlansSection }     from './components/sections/PlansSection';
 import { WorkoutsSection }  from './components/sections/WorkoutsSection';
 import SubscriptionPlansSection from './components/sections/SubscriptionPlansSection';
+import SubscriptionsSection from './components/sections/SubscriptionsSection';
 import { ReviewsSection }   from './components/sections/ReviewsSection';
 import { AboutUsSection }   from './components/sections/AboutUsSection';
 
@@ -66,6 +67,7 @@ const SECTION_TITLES: Record<string, string> = {
   plans: 'الخطط الغذائية',
   workouts: 'التمارين والبرامج',
   'subscription-plans': 'باقات الاشتراك',
+  subscriptions: 'الاشتراكات',
   'payment-methods': 'طرق الدفع',
   reviews: 'التقييمات',
   results: 'النتائج',
@@ -181,9 +183,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
 
         <main className="flex-1 p-4 md:p-8 pt-20 lg:pt-8">
           {activeSection === 'overview' && (
-            <OverviewSection
-              onShowAddPatient={() => setShowAddPatient(true)}
-            />
+            <OverviewSection />
           )}
           {activeSection === 'patients' && (
             <PatientsSection
@@ -213,6 +213,7 @@ export default function DoctorDashboard({ onLogout }: DoctorDashboardProps) {
             />
           )}
           {activeSection === 'subscription-plans' && <SubscriptionPlansSection />}
+          {activeSection === 'subscriptions' && <SubscriptionsSection />}
           {activeSection === 'payment-methods' && (
             <PaymentMethodsSection
               onShowAddModal={() => setShowAddPaymentMethod(true)}

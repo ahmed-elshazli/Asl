@@ -1,9 +1,12 @@
 import { motion } from 'motion/react';
-import { Crown, Sparkles, Loader2 } from 'lucide-react';
+import { Crown, Sparkles, Loader2, Clock, XCircle, Ban, AlertTriangle } from 'lucide-react';
 import { CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useSubscriptionPlans } from '../doctorDashBoard/hooks/useSubscriptionPlans';
+import { useMyCurrentSubscription, useCancelMySubscription } from '../doctorDashBoard/hooks/useSubscriptions';
 import { CheckoutModal } from './components/CheckoutModal';
+import ConfirmModal from '../components/ConfirmModal';
 
 interface SubscriptionProps {
   onProtectedAction: (action: () => void) => void;
@@ -12,8 +15,8 @@ interface SubscriptionProps {
   onSubscribe: () => void;
 }
 
-export default function Subscription({ onProtectedAction,  isPremium, onSubscribe }: SubscriptionProps) {
-  const { data: plansData, isLoading, isError } = useSubscriptionPlans();
+export default function Subscription({ isAuthenticated, onProtectedAction, isPremium, onSubscribe }: SubscriptionProps) {
+  const { data: plansData, isLoading: plansLoading, isError } = useSubscriptionPlans();
   const rawPlans = plansData?.data || plansData || [];
   const apiPlans = Array.isArray(rawPlans) ? rawPlans : (rawPlans.data || []);
   const activePlans = apiPlans.filter((p: any) => p.isActive).sort((a: any, b: any) => (a.sortOrder || 0) - (b.sortOrder || 0));
@@ -33,7 +36,143 @@ export default function Subscription({ onProtectedAction,  isPremium, onSubscrib
     onSubscribe();
   };
 
-  if (isPremium) {
+  const { data: currentSub, isLoading: subLoading } = useMyCurrentSubscription(isAuthenticated);
+  const subStatus = currentSub?.status;
+  const isLoading = plansLoading || subLoading;
+
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const { mutate: cancelMySubscription, isPending: isCancelling } = useCancelMySubscription();
+
+  const handleCancelConfirm = () => {
+    cancelMySubscription(undefined, {
+      onSuccess: () => {
+        toast.success('تم إلغاء اشتراكك.');
+        setShowCancelConfirm(false);
+      },
+      onError: (err: any) => {
+        const msg = err?.response?.data?.message;
+        toast.error(typeof msg === 'string' ? msg : 'حدث خطأ أثناء إلغاء الاشتراك.');
+        setShowCancelConfirm(false);
+      },
+    });
+  };
+
+  // ==========================================
+  // PENDING status - waiting for doctor approval
+  // ==========================================
+  if (subStatus === 'PENDING') {
+    const planName = (currentSub?.plan as any)?.name || 'الباقة المختارة';
+    return (
+      <div className="p-6 md:p-8 pb-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-4xl mx-auto text-center"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', bounce: 0.5, delay: 0.2 }}
+            className="inline-flex p-8 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-full mb-8"
+          >
+            <Clock className="w-20 h-20 text-white" />
+          </motion.div>
+
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">طلبك قيد المراجعة</h1>
+          <p className="text-muted-foreground text-xl mb-12">
+            تم إرسال طلب الاشتراك في باقة <span className="font-bold text-primary">{planName}</span> بنجاح
+          </p>
+
+          <div className="bg-white rounded-[3rem] p-12 border border-indigo-100 shadow-2xl">
+            <div className="bg-indigo-50 rounded-2xl p-8 mb-8">
+              <div className="flex items-center justify-center gap-3 text-indigo-700 mb-4">
+                <Clock className="w-6 h-6" />
+                <span className="text-xl font-bold">في انتظار موافقة الطبيب</span>
+              </div>
+              <p className="text-muted-foreground text-lg">
+                سيتم مراجعة إيصال الدفع الخاص بك وتفعيل اشتراكك في أقرب وقت ممكن.
+                ستتلقى إشعاراً عند الموافقة على طلبك.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="text-right">
+                <h3 className="text-lg font-bold mb-2 text-muted-foreground">الباقة المطلوبة</h3>
+                <p className="text-2xl font-bold text-primary">{planName}</p>
+              </div>
+              <div className="text-right">
+                <h3 className="text-lg font-bold mb-2 text-muted-foreground">تاريخ الطلب</h3>
+                <p className="text-2xl font-bold text-foreground">
+                  {currentSub?.createdAt
+                    ? new Date(currentSub.createdAt).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
+                    : '—'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // REJECTED status - subscription was rejected
+  // ==========================================
+  if (subStatus === 'REJECTED') {
+    const planName = (currentSub?.plan as any)?.name || 'الباقة المختارة';
+    const rejectReason = currentSub?.rejectReason || 'لم يتم تحديد سبب';
+    return (
+      <div className="p-6 md:p-8 pb-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-4xl mx-auto text-center"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', bounce: 0.5, delay: 0.2 }}
+            className="inline-flex p-8 bg-gradient-to-br from-rose-500 to-red-600 rounded-full mb-8"
+          >
+            <XCircle className="w-20 h-20 text-white" />
+          </motion.div>
+
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">تم رفض طلب الاشتراك</h1>
+          <p className="text-muted-foreground text-xl mb-12">
+            عذراً، تم رفض طلب اشتراكك في باقة <span className="font-bold text-primary">{planName}</span>
+          </p>
+
+          <div className="bg-white rounded-[3rem] p-12 border border-rose-100 shadow-2xl mb-12">
+            <div className="bg-rose-50 rounded-2xl p-8">
+              <div className="flex items-center justify-center gap-3 text-rose-700 mb-4">
+                <XCircle className="w-6 h-6" />
+                <span className="text-xl font-bold">سبب الرفض</span>
+              </div>
+              <p className="text-foreground text-lg">{rejectReason}</p>
+            </div>
+          </div>
+
+          <p className="text-muted-foreground text-lg mb-6">يمكنك إعادة المحاولة باختيار باقة جديدة أدناه:</p>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // ACTIVE status - has active subscription
+  // ==========================================
+  const hasActiveSub = subStatus === 'ACTIVE';
+
+  if (hasActiveSub || isPremium) {
+    const planName = currentSub?.plan ? (currentSub.plan as any).name : 'عضوية مميزة (باقة خاصة)';
+    const endDate = currentSub?.endDate
+      ? new Date(currentSub.endDate).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })
+      : 'مفتوح الدوام';
+    const planFeatures = (currentSub?.plan as any)?.features || ['دعم على مدار الساعة', 'خطط غذائية وتدريبية مخصصة', 'تواصل مباشر مع الطبيب'];
+    const daysLeft = currentSub?.endDate
+      ? Math.ceil((new Date(currentSub.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      : null;
+
     return (
       <div className="p-6 md:p-8 pb-12">
         <motion.div
@@ -58,39 +197,63 @@ export default function Subscription({ onProtectedAction,  isPremium, onSubscrib
               <div className="text-right">
                 <h3 className="text-xl font-bold mb-2">الخطة الحالية</h3>
                 <p className="text-3xl font-bold bg-gradient-to-br from-primary to-accent bg-clip-text text-transparent">
-                  الاشتراك السنوي
+                  {planName}
                 </p>
               </div>
               <div className="text-right">
-                <h3 className="text-xl font-bold mb-2">تاريخ التجديد</h3>
-                <p className="text-3xl font-bold text-primary">25 مايو 2027</p>
+                <h3 className="text-xl font-bold mb-2">تاريخ الانتهاء</h3>
+                <p className="text-3xl font-bold text-primary">{endDate}</p>
+                {daysLeft !== null && (
+                  <p className={`text-sm mt-1 font-medium ${daysLeft <= 7 ? 'text-orange-500' : 'text-emerald-500'}`}>
+                    (متبقي {daysLeft} يوم)
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-3xl p-8">
-              <h3 className="text-2xl font-bold mb-6">الميزات المتاحة</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[{ title: 'ميزات حصرية', icon: Sparkles }].map((feature: any, idx: number) => {
-                  const Icon = feature.icon;
-                  return (
+            {planFeatures.length > 0 && (
+              <div className="bg-gradient-to-br from-primary/5 to-accent/5 rounded-3xl p-8">
+                <h3 className="text-2xl font-bold mb-6">الميزات المتاحة</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {planFeatures.map((feature: string, idx: number) => (
                     <motion.div
-                      key={feature.text}
+                      key={idx}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.1 * idx }}
                       className="flex items-center gap-3 text-right"
                     >
                       <div className="p-2 bg-gradient-to-br from-primary to-accent rounded-xl">
-                        <Icon className="w-5 h-5 text-white" />
+                        <CheckCircle2 className="w-5 h-5 text-white" />
                       </div>
-                      <span className="font-semibold">{feature.text}</span>
+                      <span className="font-semibold">{feature}</span>
                     </motion.div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
+
+          {hasActiveSub && (
+            <button
+              onClick={() => setShowCancelConfirm(true)}
+              className="mt-8 text-sm text-muted-foreground hover:text-destructive underline underline-offset-4 transition-colors"
+            >
+              إلغاء الاشتراك
+            </button>
+          )}
         </motion.div>
+
+        <ConfirmModal
+          isOpen={showCancelConfirm}
+          title="إلغاء الاشتراك"
+          message={`هل أنت متأكد من إلغاء اشتراكك في باقة "${planName}"؟ هتفقد وصولك للميزات المميزة فورًا.`}
+          confirmText="إلغاء الاشتراك"
+          cancelText="تراجع"
+          isLoading={isCancelling}
+          onConfirm={handleCancelConfirm}
+          onCancel={() => setShowCancelConfirm(false)}
+        />
       </div>
     );
   }
@@ -112,6 +275,9 @@ export default function Subscription({ onProtectedAction,  isPremium, onSubscrib
     );
   }
 
+  const lapsedStatus = subStatus === 'CANCELLED' || subStatus === 'EXPIRED' ? subStatus : null;
+  const lapsedPlanName = (currentSub?.plan as any)?.name;
+
   return (
     <div className="p-6 md:p-8 pb-12">
       <motion.div
@@ -119,6 +285,28 @@ export default function Subscription({ onProtectedAction,  isPremium, onSubscrib
         animate={{ opacity: 1, y: 0 }}
         className="max-w-6xl mx-auto"
       >
+        {lapsedStatus && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="max-w-2xl mx-auto mb-10 bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center"
+          >
+            <div className="inline-flex p-3 bg-amber-100 rounded-full mb-3">
+              {lapsedStatus === 'CANCELLED'
+                ? <Ban className="w-6 h-6 text-amber-600" />
+                : <AlertTriangle className="w-6 h-6 text-amber-600" />}
+            </div>
+            <h3 className="text-lg font-bold text-amber-900 mb-1">
+              {lapsedStatus === 'CANCELLED' ? 'تم إلغاء اشتراكك السابق' : 'انتهى اشتراكك السابق'}
+            </h3>
+            <p className="text-sm text-amber-700">
+              {lapsedPlanName
+                ? <>كنت مشتركاً في باقة <span className="font-bold">{lapsedPlanName}</span>. اختر باقة جديدة للاستمرار في الاستفادة من كل الميزات.</>
+                : 'اختر باقة جديدة للاستمرار في الاستفادة من كل الميزات.'}
+            </p>
+          </motion.div>
+        )}
+
         <div className="text-center mb-12">
           <motion.div
             initial={{ scale: 0 }}

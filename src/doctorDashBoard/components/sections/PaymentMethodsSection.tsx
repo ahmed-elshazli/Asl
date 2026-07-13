@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, Plus, Loader2, Edit, Trash2, Power, PowerOff, Building2, Banknote, QrCode } from 'lucide-react';
+import ConfirmModal from '../../../components/ConfirmModal';
 import { useAllPaymentMethodsAdmin, useTogglePaymentStatus, useDeletePaymentMethod } from '../../hooks/usePaymentMethods';
 import type { PaymentMethod } from '../../api/paymentMethodsApi';
 
@@ -12,6 +14,7 @@ export function PaymentMethodsSection({ onShowAddModal, onShowEditModal }: Payme
   const { data: paymentMethods, isLoading } = useAllPaymentMethodsAdmin();
   const { mutate: toggleStatus, isPending: isToggling } = useTogglePaymentStatus();
   const { mutate: deleteMethod, isPending: isDeleting } = useDeletePaymentMethod();
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   const getMethodIcon = (type: string) => {
     if (type === 'bank_transfer') return <Building2 className="w-6 h-6" />;
@@ -136,11 +139,7 @@ export function PaymentMethodsSection({ onShowAddModal, onShowEditModal }: Payme
                     {method.isActive ? 'إيقاف' : 'تفعيل'}
                   </button>
                   <button
-                    onClick={() => {
-                      if (window.confirm('هل أنت متأكد من حذف طريقة الدفع هذه؟')) {
-                        deleteMethod(method.id);
-                      }
-                    }}
+                    onClick={() => setDeleteTarget(method.id)}
                     disabled={isDeleting}
                     className="p-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-xl transition-colors"
                   >
@@ -152,6 +151,22 @@ export function PaymentMethodsSection({ onShowAddModal, onShowEditModal }: Payme
           </AnimatePresence>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title="حذف طريقة الدفع"
+        message="هل أنت متأكد من حذف طريقة الدفع هذه؟ لا يمكن التراجع عن هذا الإجراء."
+        confirmText="حذف"
+        isLoading={isDeleting}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMethod(deleteTarget, {
+              onSettled: () => setDeleteTarget(null)
+            });
+          }
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </motion.div>
   );
 }

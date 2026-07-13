@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, CreditCard, UploadCloud, Loader2, FileText, ShieldCheck, Info } from 'lucide-react';
+import { X, CreditCard, UploadCloud, Loader2, FileText, ShieldCheck, Info, Phone } from 'lucide-react';
 import { useAllPaymentMethods } from '../../doctorDashBoard/hooks/usePaymentMethods';
+import { useCreateSubscriptionByPatient } from '../../doctorDashBoard/hooks/useSubscriptions';
+import { toast } from 'sonner';
 
 interface CheckoutModalProps {
   plan: any;
@@ -15,21 +17,40 @@ export function CheckoutModal({ plan, isOpen, onClose, onConfirm }: CheckoutModa
   const paymentMethods = Array.isArray(paymentMethodsData) ? paymentMethodsData : ([] as any[]);
 
   const [selectedMethodId, setSelectedMethodId] = useState<string>('');
+  const [senderNumber, setSenderNumber] = useState('');
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { mutate: createSubscription, isPending: isSubmitting } = useCreateSubscriptionByPatient();
 
   const selectedMethod = paymentMethods.find((m: any) => m.id === selectedMethodId || m._id === selectedMethodId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedMethod) return;
-    
-    setIsSubmitting(true);
-    // Simulate API call for subscription request
-    setTimeout(() => {
-      setIsSubmitting(false);
-      onConfirm(); // This will trigger the success state in the parent
-    }, 1500);
+    if (!selectedMethod || !receiptFile || !senderNumber.trim()) return;
+
+    createSubscription(
+      {
+        planId: plan._id || plan.id,
+        paymentMethodId: selectedMethodId,
+        senderNumber: senderNumber.trim(),
+        paymentScreenshot: receiptFile,
+      },
+      {
+        onSuccess: () => {
+          toast.success('تم إرسال طلب الاشتراك بنجاح! سيتم مراجعته من قبل الطبيب.');
+          // Reset form
+          setSelectedMethodId('');
+          setSenderNumber('');
+          setReceiptFile(null);
+          onConfirm();
+        },
+        onError: (err: any) => {
+          const msg = err?.response?.data?.message;
+          const errorMsg = typeof msg === 'string' ? msg : Array.isArray(msg) ? msg[0] : 'حدث خطأ أثناء الاشتراك. حاول مجدداً.';
+          toast.error(errorMsg);
+        },
+      }
+    );
   };
 
   if (!isOpen || !plan) return null;
@@ -59,7 +80,7 @@ export function CheckoutModal({ plan, isOpen, onClose, onConfirm }: CheckoutModa
               </div>
               <div>
                 <h2 className="text-xl font-bold">إتمام الاشتراك</h2>
-                <p className="text-sm text-muted-foreground mt-1">اختر طريقة الدفع المناسبة لك</p>
+                <p className="text-sm text-muted-foreground mt-1">اختر طريقة الدفع وأرفق الإيصال</p>
               </div>
             </div>
             <button
@@ -171,9 +192,26 @@ export function CheckoutModal({ plan, isOpen, onClose, onConfirm }: CheckoutModa
                           </div>
                         )}
 
+                        {/* Sender Number Input */}
+                        <div>
+                          <label className="block text-sm font-bold text-foreground mb-2">رقم الهاتف المرسل منه</label>
+                          <div className="relative">
+                            <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                            <input
+                              type="tel"
+                              required
+                              placeholder="01xxxxxxxxx"
+                              value={senderNumber}
+                              onChange={(e) => setSenderNumber(e.target.value)}
+                              className="w-full pr-10 pl-4 py-3 bg-white rounded-xl border border-border outline-none focus:ring-2 focus:ring-primary text-sm"
+                              dir="ltr"
+                            />
+                          </div>
+                        </div>
+
                         {/* Receipt Upload */}
                         <div>
-                          <label className="block text-sm font-bold text-foreground mb-3">إرفاق إيصال التحويل (اختياري حالياً)</label>
+                          <label className="block text-sm font-bold text-foreground mb-3">إرفاق إيصال التحويل <span className="text-red-500">*</span></label>
                           <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-xl cursor-pointer hover:bg-white/50 hover:border-primary transition-all bg-white group">
                             <div className="flex flex-col items-center justify-center pt-5 pb-6">
                               {receiptFile ? (
@@ -218,7 +256,7 @@ export function CheckoutModal({ plan, isOpen, onClose, onConfirm }: CheckoutModa
                   </button>
                   <button
                     type="submit"
-                    disabled={!selectedMethod || isSubmitting}
+                    disabled={!selectedMethod || isSubmitting || !receiptFile || !senderNumber.trim()}
                     className="px-8 py-3 bg-gradient-to-br from-primary to-accent text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'تأكيد الدفع والاشتراك'}

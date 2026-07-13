@@ -6,6 +6,7 @@ import { useAllUsers } from '../../hooks/useDoctorUsers';
 import { useAuthStore } from '../../../store/authStore';
 import { compressImage } from '../../../lib/imageCompression';
 import type { Conversation } from '../../../Messaging/api/chatApi';
+import ConfirmModal from '../../../components/ConfirmModal';
 
 interface MessagesSectionProps {
   selectedConversationId: string | null;
@@ -22,6 +23,7 @@ export function MessagesSection({ selectedConversationId, setSelectedConversatio
   const [newGroupName, setNewGroupName] = useState('');
   const [showParticipantsModal, setShowParticipantsModal] = useState(false);
   const [participantIdToAdd, setParticipantIdToAdd] = useState('');
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -281,10 +283,7 @@ export function MessagesSection({ selectedConversationId, setSelectedConversatio
                                 <button
                                   onClick={() => {
                                     setShowDropdown(false);
-                                    if (window.confirm('هل أنت متأكد من مغادرة هذه المحادثة؟')) {
-                                      leaveConversation(selectedConversationId);
-                                      setSelectedConversationId(null);
-                                    }
+                                    setShowLeaveConfirm(true);
                                   }}
                                   disabled={isLeaving}
                                   className="w-full text-start px-3 py-2 text-sm rounded-lg hover:bg-red-50 text-red-600 transition-colors flex items-center gap-2 mt-1"
@@ -603,6 +602,26 @@ export function MessagesSection({ selectedConversationId, setSelectedConversatio
           </div>
         )}
       </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={showLeaveConfirm}
+        title="مغادرة المحادثة"
+        message="هل أنت متأكد من مغادرة هذه المحادثة؟ لا يمكنك التراجع عن هذا الإجراء."
+        confirmText="مغادرة"
+        variant="warning"
+        isLoading={isLeaving}
+        onConfirm={() => {
+          if (selectedConversationId) {
+            leaveConversation(selectedConversationId, {
+              onSettled: () => {
+                setShowLeaveConfirm(false);
+                setSelectedConversationId(null);
+              }
+            });
+          }
+        }}
+        onCancel={() => setShowLeaveConfirm(false)}
+      />
     </motion.div>
   );
 }

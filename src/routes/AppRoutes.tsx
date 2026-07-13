@@ -6,6 +6,7 @@ import { LoginModal } from '../utils/LoginModal';
 import { PoliciesModal } from '../utils/PoliciesModal';
 import { useAuthStore } from '../store/authStore';
 import { useLogout } from '../login/hooks/useLogout';
+import { useMyCurrentSubscription } from '../doctorDashBoard/hooks/useSubscriptions';
 
 import { Landing } from '../landing/Landing';
 import DoctorDashboard from '../doctorDashBoard/DoctorDashboard';
@@ -44,8 +45,13 @@ export function AppRoutes() {
   const { isAuthenticated } = useAuthStore();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showPoliciesModal, setShowPoliciesModal] = useState(false);
-  const [isPremiumUser, setIsPremiumUser]   = useState(false);
   const navigate = useNavigate();
+
+  // Source of truth for premium access is the patient's real subscription
+  // status, not local state — a fake flag here would go stale the moment
+  // a doctor approves/rejects/cancels from the other side of the app.
+  const { data: currentSubscription } = useMyCurrentSubscription(isAuthenticated);
+  const isPremiumUser = currentSubscription?.status === 'ACTIVE';
 
   const handleShowLoginFlow = () => {
     const hasAgreed = localStorage.getItem('policiesAgreed') === 'true';
@@ -125,7 +131,7 @@ export function AppRoutes() {
 
           <Route path="/subscription" element={
             <Suspense fallback={<PageLoader />}>
-              <Subscription isAuthenticated={isAuthenticated} isPremium={isPremiumUser} onProtectedAction={handleProtectedAction} onSubscribe={() => setIsPremiumUser(true)} />
+              <Subscription isAuthenticated={isAuthenticated} isPremium={isPremiumUser} onProtectedAction={handleProtectedAction} onSubscribe={() => {}} />
             </Suspense>
           } />
 

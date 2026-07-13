@@ -146,6 +146,15 @@ export function Navigation({ isAuthenticated, onShowLogin }: NavigationProps) {
                 );
               })}
               
+              {isAuthenticated && user && (
+                <div
+                  className="ml-2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-secondary/60 text-xs text-muted-foreground"
+                  title={`مسجل دخول كـ ${user.role === 'doctor' || user.role === 'admin' ? 'دكتور/أدمن' : 'مريض'}`}
+                >
+                  <span className="font-semibold text-foreground" dir="ltr">{user.email}</span>
+                </div>
+              )}
+
               {/* زر التثبيت للديسكتوب */}
               <motion.button
                 onClick={handleInstallClick}
@@ -223,6 +232,13 @@ export function Navigation({ isAuthenticated, onShowLogin }: NavigationProps) {
                     <X className="w-5 h-5 text-muted-foreground" />
                   </motion.button>
                 </div>
+
+                {isAuthenticated && user && (
+                  <div className="mb-6 px-4 py-2.5 rounded-2xl bg-secondary/60 text-xs text-muted-foreground flex items-center justify-between">
+                    <span>مسجل دخول كـ</span>
+                    <span className="font-semibold text-foreground" dir="ltr">{user.email}</span>
+                  </div>
+                )}
 
                 <motion.button
                   onClick={() => {
