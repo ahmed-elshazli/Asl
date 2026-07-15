@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import {
   doctorUsersApi,
   type CreateUserPayload,
@@ -10,51 +10,29 @@ import {
 // Query Keys
 // ==========================================
 export const usersKeys = {
-  all: ['users'] as const,
-  lists: () => [...usersKeys.all, 'list'] as const,
-  list: (page: number, limit: number, search?: string) =>
-    [...usersKeys.lists(), { page, limit, search }] as const,
-  infiniteList: (search?: string) => [...usersKeys.all, 'infinite', { search }] as const,
-  details: () => [...usersKeys.all, 'detail'] as const,
-  detail: (id: string) => [...usersKeys.details(), id] as const,
+  all:           ['users'] as const,
+  lists:         () => [...usersKeys.all, 'list'] as const,
+  list:          (page: number, limit: number) => [...usersKeys.lists(), { page, limit }] as const,
+  infiniteLists: () => [...usersKeys.all, 'infinite'] as const,
+  infiniteList:  (search: string) => [...usersKeys.infiniteLists(), search] as const,
+  details:       () => [...usersKeys.all, 'detail'] as const,
+  detail:        (id: string) => [...usersKeys.details(), id] as const,
 };
 
 // ==========================================
 // Queries
 // ==========================================
 
-/** GET /users — جلب كل المستخدمين */
+/** GET /users — كل المستخدمين */
 export const useAllUsers = (page = 1, limit = 10, search = '') => {
   return useQuery({
-    queryKey: usersKeys.list(page, limit, search),
+    queryKey: [...usersKeys.list(page, limit), search],
     queryFn: () => doctorUsersApi.getAll(page, limit, search),
     placeholderData: (prev) => prev,
   });
 };
 
-import { useInfiniteQuery } from '@tanstack/react-query';
-
-export const useInfinitePatients = (search = '') => {
-  return useInfiniteQuery({
-    queryKey: usersKeys.infiniteList(search),
-    queryFn: async ({ pageParam = 1 }) => {
-      const res = await doctorUsersApi.getAll(pageParam, 20, search);
-      // تصفية المرضى فقط محلياً إذا لم يدعم الباك إند البحث/الفلترة
-      const patients = res.data.filter((u: any) => u.role === 'patient');
-      return {
-        ...res,
-        data: patients
-      };
-    },
-    initialPageParam: 1,
-    getNextPageParam: (lastPage) => {
-      const { currentPage, numberOfPages } = lastPage.pagination;
-      return currentPage < numberOfPages ? currentPage + 1 : undefined;
-    },
-  });
-};
-
-/** GET /users/{id} — جلب مستخدم بالـ ID */
+/** GET /users/{id} — مستخدم بالـ ID */
 export const useUserById = (id: string) => {
   return useQuery({
     queryKey: usersKeys.detail(id),
@@ -63,22 +41,54 @@ export const useUserById = (id: string) => {
   });
 };
 
+/**
+ * Infinite scroll للمرضى — مستخدم في CreateSubscriptionModal وغيره
+ * بيدعم البحث client-side عن طريق select
+ */
+export const useInfinitePatients = (search?: string) => {
+  return useInfiniteQuery({
+    queryKey: usersKeys.infiniteList(search ?? ''),
+    queryFn: ({ pageParam }: { pageParam: number }) =>
+      doctorUsersApi.getAll(pageParam, 20),
+    getNextPageParam: (lastPage) => {
+      const { currentPage, numberOfPages } = lastPage.pagination;
+      return currentPage < numberOfPages ? currentPage + 1 : undefined;
+    },
+    initialPageParam: 1,
+    // فلترة client-side لو في search
+    select: search
+      ? (data) => ({
+          ...data,
+          pages: data.pages.map((page) => ({
+            ...page,
+            data: page.data.filter(
+              (user) =>
+                user.fullName.toLowerCase().includes(search.toLowerCase()) ||
+                user.email.toLowerCase().includes(search.toLowerCase()),
+            ),
+          })),
+        })
+      : undefined,
+  });
+};
+
 // ==========================================
 // Mutations
 // ==========================================
 
-/** POST /users/create — إنشاء مستخدم جديد */
+/** POST /users/create */
 export const useCreateUser = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (payload: CreateUserPayload) => doctorUsersApi.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: usersKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: usersKeys.infiniteLists() });
     },
   });
 };
 
-/** PATCH /users/{id} — تحديث بيانات مستخدم */
+/** PATCH /users/{id} */
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -91,7 +101,7 @@ export const useUpdateUser = () => {
   });
 };
 
-/** PATCH /users/change-password — تغيير كلمة المرور */
+/** PATCH /users/change-password */
 export const useChangePassword = () => {
   return useMutation({
     mutationFn: (payload: ChangePasswordPayload) =>
@@ -99,7 +109,7 @@ export const useChangePassword = () => {
   });
 };
 
-/** PATCH /users/{id}/activations — تفعيل / إلغاء تفعيل مستخدم */
+/** PATCH /users/{id}/activations */
 export const useToggleUserActivation = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -111,7 +121,7 @@ export const useToggleUserActivation = () => {
   });
 };
 
-/** DELETE /users/{id}/delete — حذف مستخدم نهائياً */
+/** DELETE /users/{id}/delete */
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -119,6 +129,7 @@ export const useDeleteUser = () => {
     onSuccess: (_, id) => {
       queryClient.removeQueries({ queryKey: usersKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: usersKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: usersKeys.infiniteLists() });
     },
   });
 };

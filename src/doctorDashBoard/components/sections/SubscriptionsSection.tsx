@@ -11,6 +11,7 @@ import {
   useRejectSubscription, useCancelSubscription,
 } from '../../hooks/useSubscriptions';
 import { useInfinitePatients } from '../../hooks/useDoctorUsers';
+import { useAllPaymentMethodsAdmin } from '../../hooks/usePaymentMethods';
 import { useSubscriptionPlans } from '../../hooks/useSubscriptionPlans';
 import type { Subscription } from '../../api/subscriptionsApi';
 import { toast } from 'sonner';
@@ -347,6 +348,9 @@ export default function SubscriptionsSection() {
   // Queries
   const { data: allResponse, isLoading: loadingAll } = useAllSubscriptions();
   const { data: pendingResponse, isLoading: loadingPending } = usePendingSubscriptions();
+  const { data: methodsResp } = useAllPaymentMethodsAdmin();
+
+  const methods = Array.isArray(methodsResp) ? methodsResp : ((methodsResp as any)?.data || []);
 
   // Mutations
   const { mutate: cancelSub } = useCancelSubscription();
@@ -485,10 +489,18 @@ export default function SubscriptionsSection() {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               <AnimatePresence mode="popLayout">
                 {pendingSubs.map((sub, idx) => {
-                  const userName = sub.user?.fullName || 'مستخدم';
-                  const userEmail = sub.user?.email || '';
-                  const planName = sub.plan?.name || 'باقة';
-                  const planPrice = sub.plan?.price || 0;
+                  const userName = typeof sub.user === 'object' ? sub.user?.fullName : 'مستخدم';
+                  const userEmail = typeof sub.user === 'object' ? sub.user?.email : '';
+                  const planName = typeof sub.plan === 'object' ? sub.plan?.name : 'باقة';
+                  const planPrice = typeof sub.plan === 'object' ? sub.plan?.price : 0;
+                  
+                  let pmName = 'وسيلة دفع غير معروفة';
+                  if (typeof sub.paymentMethod === 'object' && sub.paymentMethod?.name) {
+                    pmName = sub.paymentMethod.name;
+                  } else if (typeof sub.paymentMethod === 'string') {
+                    const found = methods.find((m: any) => m.id === sub.paymentMethod || m._id === sub.paymentMethod);
+                    if (found) pmName = found.name;
+                  }
 
                   return (
                     <motion.div
@@ -533,7 +545,7 @@ export default function SubscriptionsSection() {
                           {sub.paymentMethod && (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <CreditCard className="w-3.5 h-3.5" />
-                              <span>وسيلة الدفع: <span className="font-bold text-foreground">{sub.paymentMethod.name}</span></span>
+                              <span>وسيلة الدفع: <span className="font-bold text-foreground">{pmName}</span></span>
                             </div>
                           )}
                           {sub.senderNumber && (
@@ -634,10 +646,18 @@ export default function SubscriptionsSection() {
                   const status = getStatusInfo(sub.status);
                   const StatusIcon = status.icon;
                   const daysLeft = sub.status === 'ACTIVE' ? getDaysLeft(sub.endDate) : null;
-                  const userName = sub.user?.fullName || 'مستخدم';
-                  const userEmail = sub.user?.email || '';
-                  const planName = sub.plan?.name || 'باقة';
-                  const planPrice = sub.plan?.price || 0;
+                  const userName = typeof sub.user === 'object' ? sub.user?.fullName : 'مستخدم';
+                  const userEmail = typeof sub.user === 'object' ? sub.user?.email : '';
+                  const planName = typeof sub.plan === 'object' ? sub.plan?.name : 'باقة';
+                  const planPrice = typeof sub.plan === 'object' ? sub.plan?.price : 0;
+
+                  let pmName = 'وسيلة دفع غير معروفة';
+                  if (typeof sub.paymentMethod === 'object' && sub.paymentMethod?.name) {
+                    pmName = sub.paymentMethod.name;
+                  } else if (typeof sub.paymentMethod === 'string') {
+                    const found = methods.find((m: any) => m.id === sub.paymentMethod || m._id === sub.paymentMethod);
+                    if (found) pmName = found.name;
+                  }
 
                   return (
                     <motion.div
@@ -675,6 +695,34 @@ export default function SubscriptionsSection() {
                             </div>
                             <span className="text-primary font-black text-sm">{planPrice} EGP</span>
                           </div>
+                        </div>
+
+                        {/* Payment details */}
+                        <div className="space-y-2 mb-4">
+                          {sub.paymentMethod && (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <CreditCard className="w-3.5 h-3.5" />
+                              <span>وسيلة الدفع: <span className="font-bold text-foreground">{pmName}</span></span>
+                            </div>
+                          )}
+                          {sub.senderNumber && (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Phone className="w-3.5 h-3.5" />
+                              <span>رقم المرسل: <span className="font-bold text-foreground">{sub.senderNumber}</span></span>
+                            </div>
+                          )}
+                          {sub.paymentScreenshot && (
+                            <a
+                              href={sub.paymentScreenshot}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 text-xs text-primary hover:underline"
+                            >
+                              <Image className="w-3.5 h-3.5" />
+                              <span>عرض إيصال الدفع</span>
+                              <Eye className="w-3 h-3" />
+                            </a>
+                          )}
                         </div>
 
                         {/* Dates */}

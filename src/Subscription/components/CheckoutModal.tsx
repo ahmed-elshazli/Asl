@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, CreditCard, UploadCloud, Loader2, FileText, ShieldCheck, Info, Phone } from 'lucide-react';
 import { useAllPaymentMethods } from '../../doctorDashBoard/hooks/usePaymentMethods';
 import { useCreateSubscriptionByPatient } from '../../doctorDashBoard/hooks/useSubscriptions';
+import { compressImage } from '../../lib/imageCompression';
 import { toast } from 'sonner';
 
 interface CheckoutModalProps {
@@ -19,6 +20,7 @@ export function CheckoutModal({ plan, isOpen, onClose, onConfirm }: CheckoutModa
   const [selectedMethodId, setSelectedMethodId] = useState<string>('');
   const [senderNumber, setSenderNumber] = useState('');
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
 
   const { mutate: createSubscription, isPending: isSubmitting } = useCreateSubscriptionByPatient();
 
@@ -28,13 +30,18 @@ export function CheckoutModal({ plan, isOpen, onClose, onConfirm }: CheckoutModa
     e.preventDefault();
     if (!selectedMethod || !receiptFile || !senderNumber.trim()) return;
 
-    createSubscription(
-      {
-        planId: plan._id || plan.id,
-        paymentMethodId: selectedMethodId,
-        senderNumber: senderNumber.trim(),
-        paymentScreenshot: receiptFile,
-      },
+    try {
+      setIsCompressing(true);
+      const compressedImage = await compressImage(receiptFile, 800, 0.6);
+      setIsCompressing(false);
+
+      createSubscription(
+        {
+          planId: plan._id || plan.id,
+          paymentMethodId: selectedMethodId,
+          senderNumber: senderNumber.trim(),
+          paymentScreenshot: compressedImage,
+        },
       {
         onSuccess: () => {
           toast.success('تم إرسال طلب الاشتراك بنجاح! سيتم مراجعته من قبل الطبيب.');
@@ -51,6 +58,10 @@ export function CheckoutModal({ plan, isOpen, onClose, onConfirm }: CheckoutModa
         },
       }
     );
+    } catch (error) {
+      setIsCompressing(false);
+      toast.error('حدث خطأ أثناء معالجة الصورة');
+    }
   };
 
   if (!isOpen || !plan) return null;
@@ -256,10 +267,10 @@ export function CheckoutModal({ plan, isOpen, onClose, onConfirm }: CheckoutModa
                   </button>
                   <button
                     type="submit"
-                    disabled={!selectedMethod || isSubmitting || !receiptFile || !senderNumber.trim()}
+                    disabled={!selectedMethod || isSubmitting || isCompressing || !receiptFile || !senderNumber.trim()}
                     className="px-8 py-3 bg-gradient-to-br from-primary to-accent text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'تأكيد الدفع والاشتراك'}
+                    {(isSubmitting || isCompressing) ? <Loader2 className="w-5 h-5 animate-spin" /> : 'تأكيد الدفع والاشتراك'}
                   </button>
                 </div>
               </form>

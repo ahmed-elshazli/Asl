@@ -31,24 +31,33 @@ export function usePendingSubscriptions(page = 1, limit = 100) {
 }
 
 /** Get current user's subscription - for patient */
+
+
+export function useCreateSubscriptionByPatient() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: CreateSubscriptionByPatientPayload) =>
+      subscriptionsApi.createByPatient(payload),
+    onSuccess: (newSubscription) => {
+      // ✅ بعد ما المريض يشترك، نحط الـ subscription الجديدة في الـ cache فوراً
+      // بدل ما ننتظر refetch يرجع بيانات قديمة بسبب الـ 304
+      queryClient.setQueryData(subscriptionsKeys.myCurrent(), newSubscription);
+    },
+  });
+}
+ 
 export function useMyCurrentSubscription(enabled: boolean = true) {
   return useQuery({
     queryKey: subscriptionsKeys.myCurrent(),
     queryFn: subscriptionsApi.getMyCurrent,
     enabled,
+    staleTime: 0,
+    refetchOnMount: true,
+    retry: 1,
   });
 }
-
+ 
 /** Patient creates a subscription request */
-export function useCreateSubscriptionByPatient() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: CreateSubscriptionByPatientPayload) => subscriptionsApi.createByPatient(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: subscriptionsKeys.myCurrent() });
-    },
-  });
-}
 
 /** Doctor creates an active subscription directly */
 export function useCreateSubscriptionByDoctor() {

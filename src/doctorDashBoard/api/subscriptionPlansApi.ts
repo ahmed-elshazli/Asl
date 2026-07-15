@@ -3,85 +3,107 @@ import api from '../../lib/api';
 // ==========================================
 // Types
 // ==========================================
+
 export interface SubscriptionPlan {
   _id: string;
+  id?: string;
   name: string;
   description?: string;
   price: number;
   currency?: string;
-  billingCycle?: string;
-  durationInMonths?: number;
-  durationInDays?: number;
+  billingCycle: string;
+  durationInDays: number;
   features: string[];
+  isPopular: boolean;
   isActive: boolean;
-  isPopular?: boolean;
   sortOrder?: number;
   createdAt?: string;
   updatedAt?: string;
-  [key: string]: any;
-}
-
-export interface SubscriptionPlansResponse {
-  results?: number;
-  pagination?: {
-    currentPage: number;
-    limit: number;
-    numberOfPages: number;
-  };
-  data: SubscriptionPlan[];
 }
 
 export interface CreateSubscriptionPlanPayload {
   name: string;
   description?: string;
   price: number;
-  currency?: string;
-  billingCycle?: string;
-  durationInMonths?: number;
-  durationInDays?: number;
+  billingCycle: string;
+  durationInDays: number;
   features: string[];
   isPopular?: boolean;
-  sortOrder?: number;
 }
 
 export type UpdateSubscriptionPlanPayload = Partial<CreateSubscriptionPlanPayload>;
 
 // ==========================================
+// Helper
+// ==========================================
+
+const toPlan = (raw: any): SubscriptionPlan => ({
+  ...raw,
+  id: raw.id ?? raw._id,
+});
+
+// ==========================================
 // API
 // ==========================================
+
 export const subscriptionPlansApi = {
-  /** POST /api/v1/subscription-plans — Create a new subscription plan */
-  create: async (payload: CreateSubscriptionPlanPayload): Promise<SubscriptionPlan> => {
-    const response = await api.post('/subscription-plans', payload);
-    return response.data?.data ?? response.data;
-  },
-
-  /** GET /api/v1/subscription-plans — Get all subscription plans */
-  getAll: async (page = 1, limit = 100): Promise<SubscriptionPlansResponse> => {
+  /**
+   * GET /subscription-plans — كل الخطط
+   */
+  getAll: async (page = 1, limit = 100) => {
     const response = await api.get(`/subscription-plans?page=${page}&limit=${limit}`);
-    return response.data;
+    const result = response.data;
+
+    // معالجة الـ responses المختلفة من الباك
+    if (Array.isArray(result)) {
+      return { data: result.map(toPlan), results: result.length };
+    }
+    if (Array.isArray(result?.data)) {
+      return { ...result, data: result.data.map(toPlan) };
+    }
+    return result;
   },
 
-  /** GET /api/v1/subscription-plans/{id} — Get a subscription plan by ID */
+  /**
+   * GET /subscription-plans/:id — خطة واحدة
+   */
   getById: async (id: string): Promise<SubscriptionPlan> => {
     const response = await api.get(`/subscription-plans/${id}`);
-    return response.data?.data ?? response.data;
+    const raw = response.data?.data ?? response.data;
+    return toPlan(raw);
   },
 
-  /** PATCH /api/v1/subscription-plans/{id} — Update a subscription plan */
+  /**
+   * POST /subscription-plans — إنشاء خطة جديدة
+   */
+  create: async (payload: CreateSubscriptionPlanPayload): Promise<SubscriptionPlan> => {
+    const response = await api.post('/subscription-plans', payload);
+    const raw = response.data?.data ?? response.data;
+    return toPlan(raw);
+  },
+
+  /**
+   * PATCH /subscription-plans/:id — تحديث خطة
+   */
   update: async (id: string, payload: UpdateSubscriptionPlanPayload): Promise<SubscriptionPlan> => {
     const response = await api.patch(`/subscription-plans/${id}`, payload);
-    return response.data?.data ?? response.data;
+    const raw = response.data?.data ?? response.data;
+    return toPlan(raw);
   },
 
-  /** DELETE /api/v1/subscription-plans/{id} — Delete a subscription plan */
+  /**
+   * DELETE /subscription-plans/:id — حذف خطة
+   */
   delete: async (id: string): Promise<void> => {
     await api.delete(`/subscription-plans/${id}`);
   },
 
-  /** PATCH /api/v1/subscription-plans/{id}/toggle-status — Toggle active/inactive status */
+  /**
+   * PATCH /subscription-plans/:id/toggle-status — تفعيل / إيقاف خطة
+   */
   toggleStatus: async (id: string): Promise<SubscriptionPlan> => {
     const response = await api.patch(`/subscription-plans/${id}/toggle-status`);
-    return response.data?.data ?? response.data;
+    const raw = response.data?.data ?? response.data;
+    return toPlan(raw);
   },
 };

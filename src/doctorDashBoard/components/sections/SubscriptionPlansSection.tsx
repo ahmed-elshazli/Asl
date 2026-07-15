@@ -81,7 +81,7 @@ export default function SubscriptionPlansSection() {
     const payload = { ...formData, features: featuresList };
 
     if (editingPlan) {
-      updatePlan({ id: editingPlan._id || editingPlan.id, payload }, {
+      updatePlan({ id: (editingPlan._id || editingPlan.id) as string, payload }, {
         onSuccess: () => {
           handleCloseModal();
         },

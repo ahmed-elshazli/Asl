@@ -1,48 +1,53 @@
 import api from '../../lib/api';
+import { useAuthStore } from '../../store/authStore'; 
+
 
 // ==========================================
 // Types
 // ==========================================
 
-export type SubscriptionStatus = 'PENDING' | 'ACTIVE' | 'REJECTED' | 'EXPIRED' | 'CANCELLED';
-
-export interface SubscriptionUser {
-  _id: string;
-  fullName: string;
-  email?: string;
-  phone?: string;
-}
-
-export interface SubscriptionPlanRef {
-  _id: string;
-  name: string;
-  price: number;
-  durationInDays: number;
-}
-
-export interface SubscriptionPaymentMethodRef {
-  _id: string;
-  name: string;
-  type?: string;
-  accountName?: string;
-  accountNumber?: string;
-  instructions?: string;
-}
-
 export interface Subscription {
   _id: string;
-  user: SubscriptionUser;
-  plan: SubscriptionPlanRef;
-  paymentMethod?: SubscriptionPaymentMethodRef;
+  user?: {
+    _id: string;
+    fullName: string;
+    email: string;
+    phone: string;
+  };
+  plan?: {
+    _id: string;
+    name: string;
+    price: number;
+    durationInDays: number;
+  };
+  paymentMethod?: {
+    _id: string;
+    name: string;
+    type: string;
+    accountName: string;
+    accountNumber: string;
+    instructions?: string;
+  };
   senderNumber?: string;
   paymentScreenshot?: string;
   startDate?: string;
   endDate?: string;
-  status: SubscriptionStatus;
-  approvedBy?: { _id: string; fullName: string; role: string };
+  status: 'PENDING' | 'ACTIVE' | 'REJECTED' | 'EXPIRED' | 'CANCELLED';
+  approvedBy?: { _id: string; fullName: string; role: string } | null;
   reviewedAt?: string;
   rejectReason?: string;
   createdAt: string;
+  updatedAt?: string;
+}
+
+export interface SubscriptionsResponse {
+  results: number;
+  pagination: {
+    currentPage: number;
+    limit: number;
+    numberOfPages: number;
+  };
+  data: Subscription[];
 }
 
 export interface CreateSubscriptionByPatientPayload {
@@ -62,84 +67,125 @@ export interface RejectSubscriptionPayload {
   rejectReason: string;
 }
 
-export interface SubscriptionsResponse {
-  results: number;
-  pagination: {
-    currentPage: number;
-    limit: number;
-    numberOfPages: number;
-  };
-  data: Subscription[];
-}
-
 // ==========================================
-// API calls
+// API
 // ==========================================
 
 export const subscriptionsApi = {
-  /** Patient creates a subscription request (PENDING) - multipart/form-data */
-  createByPatient: async (payload: CreateSubscriptionByPatientPayload): Promise<Subscription> => {
+  /**
+   * POST /subscriptions — المريض يطلب اشتراك مع إيصال دفع
+   * multipart/form-data مطلوب
+   */
+  createByPatient: async (payload: CreateSubscriptionByPatientPayload) => {
     const formData = new FormData();
     formData.append('planId', payload.planId);
     formData.append('paymentMethodId', payload.paymentMethodId);
     formData.append('senderNumber', payload.senderNumber);
     formData.append('paymentScreenshot', payload.paymentScreenshot);
+
     const response = await api.post('/subscriptions', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
-    return response.data?.data || response.data;
+    return response.data;
   },
 
-  /** Doctor creates an ACTIVE subscription directly for a user */
-  createByDoctor: async (payload: CreateSubscriptionByDoctorPayload): Promise<Subscription> => {
+  /**
+   * POST /subscriptions/create-by-doctor — الدكتور ينشئ اشتراك نشط مباشرة
+   */
+  createByDoctor: async (payload: CreateSubscriptionByDoctorPayload) => {
     const response = await api.post('/subscriptions/create-by-doctor', payload);
-    return response.data?.data || response.data;
+    return response.data;
   },
 
-  /** Get all subscriptions (doctor/admin only) */
+  /**
+   * GET /subscriptions — كل الاشتراكات (admin/doctor)
+   */
   getAll: async (page = 1, limit = 100): Promise<SubscriptionsResponse> => {
-    const response = await api.get('/subscriptions', { params: { page, limit, sort: '-createdAt' } });
+    const response = await api.get(`/subscriptions?page=${page}&limit=${limit}`);
     return response.data;
   },
 
-  /** Get pending subscription requests (doctor/admin only) */
+  /**
+   * GET /subscriptions/pending — الاشتراكات المعلقة
+   */
   getPending: async (page = 1, limit = 100): Promise<SubscriptionsResponse> => {
-    const response = await api.get('/subscriptions/pending', { params: { page, limit, sort: '-createdAt' } });
+    const response = await api.get(`/subscriptions/pending?page=${page}&limit=${limit}`);
     return response.data;
   },
 
-  /** Get current user's subscription */
-  getMyCurrent: async (): Promise<Subscription | null> => {
-    try {
-      const response = await api.get('/subscriptions/me');
-      return response.data?.data || response.data;
-    } catch (err: any) {
-      if (err?.response?.status === 404) return null;
-      throw err;
-    }
-  },
+  /**
+   * GET /subscriptions/me — اشتراك المريض الحالي
+   * ⚠️ الباك بيرجع array من .find() — بنأخذ أول عنصر (الأحدث)
+   */
+ 
+ 
+getMyCurrent: async (): Promise<Subscription | null> => {
+  try {
+    const token   = useAuthStore.getState().token;
+    const baseURL = api.defaults.baseURL || 'https://asl-api.up.railway.app/api/v1';
+ 
+    // ✅ fetch مع cache: 'no-store' بيكسر الـ browser HTTP cache
+    // بدون ما يبعت Cache-Control header (فمفيش CORS issue)
+    const res = await fetch(`${baseURL}/subscriptions/me`, {
+      cache: 'no-store',
+      headers: {
+        Authorization: `Bearer ${token || ''}`,
+      },
+    });
+ 
+    if (!res.ok) return null;
+ 
+    const data = await res.json();
+ 
+    let subs: Subscription[] = [];
+    if (Array.isArray(data))             subs = data;
+    else if (Array.isArray(data?.data))  subs = data.data;
+    else if (data?._id)                  subs = [data as Subscription];
+    else                                 return null;
+ 
+    if (subs.length === 0) return null;
+ 
+    // أولوية: ACTIVE → PENDING → الأحدث
+    return (
+      subs.find((s) => s.status === 'ACTIVE')  ||
+      subs.find((s) => s.status === 'PENDING') ||
+      subs[0]
+    );
+  } catch {
+    return null;
+  }
+},
+ 
 
-  /** Approve a pending subscription */
-  approve: async (id: string): Promise<Subscription> => {
+  /**
+   * PATCH /subscriptions/approve/:id — الدكتور يوافق على اشتراك
+   */
+  approve: async (id: string) => {
     const response = await api.patch(`/subscriptions/approve/${id}`);
-    return response.data?.data || response.data;
+    return response.data;
   },
 
-  /** Reject a pending subscription */
-  reject: async (payload: RejectSubscriptionPayload): Promise<Subscription> => {
+  /**
+   * PATCH /subscriptions/reject — الدكتور يرفض اشتراك مع سبب
+   */
+  reject: async (payload: RejectSubscriptionPayload) => {
     const response = await api.patch('/subscriptions/reject', payload);
-    return response.data?.data || response.data;
+    return response.data;
   },
 
-  /** Cancel a subscription */
-  cancel: async (id: string): Promise<Subscription> => {
+  /**
+   * PATCH /subscriptions/:id/cancel — إلغاء اشتراك محدد (admin/doctor)
+   */
+  cancel: async (id: string) => {
     const response = await api.patch(`/subscriptions/${id}/cancel`);
-    return response.data?.data || response.data;
+    return response.data;
   },
 
-  /** Patient cancels their own active subscription */
-  cancelMine: async (): Promise<Subscription> => {
+  /**
+   * PATCH /subscriptions/me/cancel — المريض يلغي اشتراكه
+   */
+  cancelMine: async () => {
     const response = await api.patch('/subscriptions/me/cancel');
-    return response.data?.data || response.data;
+    return response.data;
   },
 };

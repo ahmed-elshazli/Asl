@@ -114,7 +114,7 @@ export function Navigation({ isAuthenticated, onShowLogin }: NavigationProps) {
               </div>
             </div>
 
-            <div className="hidden lg:flex items-center gap-2">
+            <div className="hidden xl:flex items-center gap-2">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTabId === tab.id;
@@ -167,7 +167,7 @@ export function Navigation({ isAuthenticated, onShowLogin }: NavigationProps) {
               </motion.button>
             </div>
 
-            <div className="flex items-center gap-3 lg:hidden">
+            <div className="flex items-center gap-3 xl:hidden">
                {/* زر التثبيت للموبايل */}
               <motion.button
                 onClick={handleInstallClick}
@@ -198,7 +198,7 @@ export function Navigation({ isAuthenticated, onShowLogin }: NavigationProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 xl:hidden"
               onClick={() => setIsMenuOpen(false)}
             />
 
@@ -207,7 +207,7 @@ export function Navigation({ isAuthenticated, onShowLogin }: NavigationProps) {
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -300, opacity: 0 }}
               transition={{ type: 'spring', bounce: 0.2 }}
-              className="fixed top-0 right-0 bottom-0 w-80 bg-white z-50 lg:hidden shadow-2xl overflow-y-auto custom-scrollbar"
+              className="fixed top-0 right-0 bottom-0 w-80 bg-white z-50 xl:hidden shadow-2xl overflow-y-auto custom-scrollbar"
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-8">
