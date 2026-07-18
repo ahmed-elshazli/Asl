@@ -44,4 +44,4 @@ jobs:
 
       - name: Sync dist to server
         run: |
-          rclone sync ./dist webdisk: --webdav-headers "Depth: 1" -v
+          rclone sync ./dist webdisk: -v
