@@ -1,0 +1,47 @@
+name: Deploy Asl to Hostinger (via WebDAV)
+
+on:
+  push:
+    branches:
+      - main   # أو master، حسب اسم البرانش الرئيسي عندك
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          # ضيف أي env variables تانية هنا
+
+      - name: Install rclone
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+
+      - name: Configure rclone (WebDAV)
+        run: |
+          mkdir -p ~/.config/rclone
+          cat > ~/.config/rclone/rclone.conf << EOF
+          [webdisk]
+          type = webdav
+          url = https://${{ secrets.WEBDAV_HOST }}:2078
+          vendor = other
+          user = ${{ secrets.WEBDAV_USERNAME }}
+          pass = $(rclone obscure "${{ secrets.WEBDAV_PASSWORD }}")
+          EOF
+
+      - name: Sync dist to server
+        run: |
+          rclone sync ./dist webdisk: --webdav-headers "Depth: 1" -v
