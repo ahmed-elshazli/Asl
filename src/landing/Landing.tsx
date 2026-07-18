@@ -130,7 +130,7 @@ export function Landing({ onShowLogin, isAuthenticated, userName }: LandingProps
               className="inline-flex items-center gap-3 px-6 py-3 bg-white/20 backdrop-blur-xl rounded-full mb-8 border border-white/30"
             >
               <Sparkles className="w-6 h-6 text-white" />
-              <span className="text-white font-semibold">ابدأ رحلتك الصحية اليوم</span>
+              <span className="text-white font-semibold">22ابدأ رحلتك الصحية اليوم</span>
             </motion.div>
 
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 text-white flex flex-col items-center">
