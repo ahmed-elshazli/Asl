@@ -143,7 +143,7 @@ export function Landing({ onShowLogin, isAuthenticated, userName }: LandingProps
               />
             </h1>
             <p className="text-xl md:text-2xl text-white/90 mb-10 max-w-3xl mx-auto leading-relaxed font-medium">
-             22 نظام تغذية ذكي مدعوم بالخبرة الطبية لمساعدتك في تحقيق أهدافك الصحية بطريقة علمية ومستدامة
+              نظام تغذية ذكي مدعوم بالخبرة الطبية لمساعدتك في تحقيق أهدافك الصحية بطريقة علمية ومستدامة
             </p>
 
             {!isAuthenticated ? (
