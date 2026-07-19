@@ -44,4 +44,4 @@ jobs:
 
       - name: Sync dist to server
         run: |
-          rclone sync ./dist webdisk: -v
+          rclone sync ./dist webdisk: -v --ignore-times
